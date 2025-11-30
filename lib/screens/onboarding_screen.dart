@@ -17,7 +17,7 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   int _step = 0;
-  final int _total = 7; // Updated from 6 to 7 for identity page
+  final int _total = 6; // 6 pages total (removed Book of Purpose)
   final TextEditingController _lifeTaskController = TextEditingController();
   
   // Identity capture controllers
@@ -214,7 +214,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       case 0:
         return _buildAwakeningPage();
       case 1:
-        return _buildIdentityPage(); // NEW: Identity capture
+        return _buildIdentityPage();
       case 2:
         return _buildMirrorPage();
       case 3:
@@ -222,9 +222,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       case 4:
         return _buildWhatIfPage();
       case 5:
-        return _buildOathPage();
-      case 6:
-        return _buildPaywallPage();
+        return _buildPaywallPage(); // Removed Book of Purpose page
       default:
         return Container();
     }
@@ -1448,39 +1446,14 @@ Feels: You'll feel transformed and strong, as your body recognizes this new leve
                 '✓ Evening Debriefs & Real-time Nudges',
                 '✓ Memory System (remembers everything)',
                 '✓ Weekly OS Letters',
+                '✓ What-If Engine (both presets)',
+                '✓ Future Timeline Simulator',
                 '✓ Habit & System Libraries',
                 '✓ Intelligent Scheduler',
-                '✗ What-If Engine (locked)',
-                '✗ Book of Purpose (locked)',
               ],
-              valueNote: 'Competitor AI companions: \$19.99/mo',
               onTap: widget.onComplete,
               isPrimary: true,
               delay: 400,
-            ),
-            const SizedBox(height: 16),
-            
-            // TIER 3: $11.99 - FULL ENLIGHTENMENT
-            _buildPricingCard(
-              icon: LucideIcons.crown,
-              title: 'Complete Access',
-              price: '\$11.99',
-              priceSubtext: '/month',
-              subtitle: 'Full transformation system',
-              badge: 'BEST VALUE',
-              features: [
-                '✓ Everything in AI Companion',
-                '✓ What-If Simulator (both presets)',
-                '✓ Book of Purpose (7-chapter journey)',
-                '✓ Future Timeline Simulator',
-                '✓ Habit Architect System',
-                '✓ Deep self-discovery tools',
-              ],
-              valueNote: 'Book of Purpose alone worth \$50+',
-              onTap: widget.onComplete,
-              isPrimary: false,
-              delay: 500,
-              isHighlighted: true,
             ),
             const SizedBox(height: 16),
             
@@ -1490,19 +1463,18 @@ Feels: You'll feel transformed and strong, as your body recognizes this new leve
               title: 'Annual Commitment',
               price: '\$69.99',
               priceSubtext: '/year',
-              subtitle: 'Save \$74 vs monthly (\$5.83/mo)',
-              badge: '51% OFF',
+              subtitle: 'Save \$14 vs monthly (\$5.83/mo)',
+              badge: '16% OFF',
               features: [
-                '✓ Complete Access (all features)',
+                '✓ All AI Companion features',
                 '✓ Priority AI response',
                 '✓ Early access to new features',
                 '✓ Founder badge',
                 '✓ Exclusive updates',
               ],
-              valueNote: '\$143.88/year → \$69.99/year',
               onTap: widget.onComplete,
               isPrimary: false,
-              delay: 600,
+              delay: 500,
             ),
             const SizedBox(height: 32),
             Row(
