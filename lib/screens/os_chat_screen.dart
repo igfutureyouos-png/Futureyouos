@@ -192,12 +192,12 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Stack(
               children: [
-                // Content
+                // Content - stays fixed, doesn't move with keyboard
                 Positioned(
                   top: 0,
                   left: 0,
                   right: 0,
-                  bottom: 80 + keyboardHeight,
+                  bottom: 220, // Fixed space for input + bottom nav
                   child: CustomScrollView(
                     controller: _scrollController,
                     slivers: [
@@ -266,18 +266,13 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                   ),
                 ),
 
-                // Input area
+                // Input area - ONLY this rises with keyboard
                 Positioned(
                   left: 0,
                   right: 0,
-                  bottom: keyboardHeight,
+                  bottom: 100 + keyboardHeight, // 100px for bottom nav, then keyboard height
                   child: Container(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.lg,
-                      AppSpacing.lg,
-                      AppSpacing.lg,
-                      140, // Space for bottom nav
-                    ),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     decoration: BoxDecoration(
                       color: const Color(0xFF18181B),
                       border: Border(

@@ -38,7 +38,7 @@ class _MainScreenState extends State<MainScreen>
     ),
     TabItem(
       icon: LucideIcons.messageCircle,
-      label: 'Chat', // New AI OS Chat tab
+      label: 'OS', // AI Operating System Chat
       screen: const OSChatScreen(),
     ),
     TabItem(
