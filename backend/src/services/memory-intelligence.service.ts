@@ -71,6 +71,27 @@ export interface SemanticThreads {
   emotionalContradictions: string[]; // "says X but does Y"
 }
 
+export interface HabitCompletionData {
+  title: string;
+  completedAt: Date;
+  streak: number;
+}
+
+export interface ProductivityEvidence {
+  last7Days: {
+    completed: number;
+    total: number;
+    completionRate: number;
+  };
+  today: {
+    completed: number;
+    total: number;
+    completions: HabitCompletionData[];
+  };
+  activeStreaks: Array<{ habitTitle: string; streak: number }>;
+  recentWins: string[]; // Last few completed habit names
+}
+
 export interface UserConsciousness {
   identity: {
     name: string;
@@ -102,6 +123,9 @@ export interface UserConsciousness {
 
   // NEW: Semantic memory threads
   semanticThreads?: SemanticThreads;
+  
+  // NEW: Actual habit productivity data
+  productivityEvidence?: ProductivityEvidence;
 }
 
 export interface VoiceIntensity {
@@ -149,6 +173,9 @@ export class MemoryIntelligenceService {
 
     // NEW: Build semantic threads from vector memory
     const semanticThreads = await this.buildSemanticThreads(userId);
+    
+    // NEW: Extract actual productivity evidence
+    const productivityEvidence = await this.extractProductivityEvidence(userId);
 
     return {
       identity: {
@@ -174,6 +201,7 @@ export class MemoryIntelligenceService {
       reflectionThemes: reflectionHistory.themes,
       legacyCode: factsData.oracle?.legacy_code || [],
       semanticThreads,
+      productivityEvidence,
     };
   }
 
@@ -299,6 +327,120 @@ export class MemoryIntelligenceService {
     }
 
     return contradictions;
+  }
+
+  // ============================================================
+  // 📊 Extract Productivity Evidence from Habit Actions
+  // ============================================================
+  private async extractProductivityEvidence(userId: string): Promise<ProductivityEvidence> {
+    try {
+      // Get user's habits
+      const habits = await prisma.habit.findMany({
+        where: { userId },
+        select: { id: true, title: true, streak: true },
+      });
+
+      if (habits.length === 0) {
+        return {
+          last7Days: { completed: 0, total: 0, completionRate: 0 },
+          today: { completed: 0, total: 0, completions: [] },
+          activeStreaks: [],
+          recentWins: [],
+        };
+      }
+
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      // Get habit actions from last 7 days
+      const recentActions = await prisma.event.findMany({
+        where: {
+          userId,
+          type: "habit_action",
+          ts: { gte: sevenDaysAgo },
+        },
+        orderBy: { ts: "desc" },
+      });
+
+      // Calculate 7-day stats
+      const completedLast7Days = recentActions.filter(
+        (e) => (e.payload as any)?.completed === true
+      );
+      const totalActionsLast7Days = recentActions.length;
+      const completionRate =
+        totalActionsLast7Days > 0
+          ? Math.round((completedLast7Days.length / totalActionsLast7Days) * 100)
+          : 0;
+
+      // Get today's completions
+      const todayActions = recentActions.filter((e) => {
+        const actionDate = new Date(e.ts);
+        return actionDate >= today;
+      });
+
+      const todayCompletions = todayActions.filter(
+        (e) => (e.payload as any)?.completed === true
+      );
+
+      // Map habit IDs to titles
+      const habitMap = new Map(habits.map((h) => [h.id, h]));
+
+      const todayCompletionData: HabitCompletionData[] = todayCompletions
+        .map((e) => {
+          const payload = e.payload as any;
+          const habit = habitMap.get(payload.habitId);
+          if (!habit) return null;
+          return {
+            title: habit.title,
+            completedAt: new Date(e.ts),
+            streak: habit.streak,
+          };
+        })
+        .filter((c): c is HabitCompletionData => c !== null)
+        .slice(0, 10); // Limit to 10 most recent
+
+      // Get active streaks (habits with streak >= 3)
+      const activeStreaks = habits
+        .filter((h) => h.streak >= 3)
+        .map((h) => ({ habitTitle: h.title, streak: h.streak }))
+        .sort((a, b) => b.streak - a.streak)
+        .slice(0, 5); // Top 5 streaks
+
+      // Recent wins (last 5 completed habits)
+      const recentWins = completedLast7Days
+        .slice(0, 5)
+        .map((e) => {
+          const payload = e.payload as any;
+          const habit = habitMap.get(payload.habitId);
+          return habit?.title || "Unknown habit";
+        })
+        .filter((title) => title !== "Unknown habit");
+
+      return {
+        last7Days: {
+          completed: completedLast7Days.length,
+          total: totalActionsLast7Days,
+          completionRate,
+        },
+        today: {
+          completed: todayCompletions.length,
+          total: todayActions.length,
+          completions: todayCompletionData,
+        },
+        activeStreaks,
+        recentWins,
+      };
+    } catch (err) {
+      console.warn("⚠️ Failed to extract productivity evidence:", err);
+      return {
+        last7Days: { completed: 0, total: 0, completionRate: 0 },
+        today: { completed: 0, total: 0, completions: [] },
+        activeStreaks: [],
+        recentWins: [],
+      };
+    }
   }
 
   /**

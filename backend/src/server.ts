@@ -141,8 +141,8 @@ const buildServer = () => {
     protectedRoutes.register(futureYouChatControllerV2); // Future-You v2 - emotion + contradiction aware
     // V2 removed - using V3 (now main what-if-chat service)
     
-    // Future-You Unified Engine (Phase 1: Coaching + Chapters)
-    protectedRoutes.register(futureYouRouter); // 7-phase purpose coaching
+    // ✅ DISABLED: Future-You Unified Engine (Purpose Engine tab removed from UI)
+    // protectedRoutes.register(futureYouRouter); // 7-phase purpose coaching - KEEP FOR FUTURE USE
     
     // Life's Task Discovery Engine (New standalone system)
     protectedRoutes.register(lifeTaskRouter); // Deep excavation + prose chapters

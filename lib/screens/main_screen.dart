@@ -5,11 +5,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui';
 
 import '../design/tokens.dart';
-import 'command_center_screen.dart';
 import 'home_screen.dart';
 import 'planner_screen.dart';
-import 'future_you_screen.dart';
-import 'habit_master_screen.dart'; // New Habit Master tab
+import 'os_chat_screen.dart'; // New AI OS Chat tab
+import 'habit_master_screen.dart';
 import 'reflections_screen.dart';
 import 'mirror_screen.dart';
 
@@ -29,7 +28,7 @@ class _MainScreenState extends State<MainScreen>
   final List<TabItem> _tabs = [
     TabItem(
       icon: LucideIcons.flame,
-      label: 'Today', // ✅ Changed from 'Home'
+      label: 'Today',
       screen: const HomeScreen(),
     ),
     TabItem(
@@ -38,21 +37,18 @@ class _MainScreenState extends State<MainScreen>
       screen: const PlannerScreen(),
     ),
     TabItem(
-      icon: LucideIcons.sparkles,
-      label: 'Discover', // ✅ Moved after Planner
-      screen: const CommandCenterScreen(),
-    ),
-    TabItem(
-      icon: LucideIcons.brain,
-      label: 'Purpose\nEngine', // ✅ Changed from 'Future\nYou'
-      screen: const FutureYouScreen(),
+      icon: LucideIcons.messageCircle,
+      label: 'Chat', // New AI OS Chat tab
+      screen: const OSChatScreen(),
     ),
     TabItem(
       icon: LucideIcons.trophy,
       label: 'Habit\nMaster',
       screen: const HabitMasterScreen(),
     ),
-    // ✅ Removed Reflections tab - now accessible via icon in SimpleHeader
+    // Removed: Discovery tab (CommandCenterScreen)
+    // Removed: Purpose Engine tab (FutureYouScreen)
+    // Reflections accessible via icon in SimpleHeader
   ];
   
   @override
@@ -65,18 +61,13 @@ class _MainScreenState extends State<MainScreen>
     )..repeat(reverse: true);
   }
 
-  // ✅ Check if first time after onboarding - start at Discover tab
+  // Check if first time after onboarding - start at Today tab
   Future<void> _checkFirstTimeAfterOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     final isFirstTimeAfterOnboarding = prefs.getBool('first_time_after_onboarding') ?? true;
     
     if (isFirstTimeAfterOnboarding) {
-      // First time - jump to Discover tab (index 2 now)
-      if (!mounted) return;
-      setState(() {
-        _currentIndex = 2;
-      });
-      _pageController.jumpToPage(2);
+      // First time - stay on Today tab (index 0)
       // Mark as no longer first time
       await prefs.setBool('first_time_after_onboarding', false);
     }

@@ -10,6 +10,7 @@ import '../design/tokens.dart';
 class SystemCard extends StatelessWidget {
   final HabitSystem system;
   final List<Habit> habits;
+  final DateTime selectedDate; // Date to check completion status
   final Function(Habit)? onToggleHabit; // For Home page - ticking enabled
   final VoidCallback? onTap;
   final VoidCallback? onDelete; // For Planner page - delete entire system
@@ -20,6 +21,7 @@ class SystemCard extends StatelessWidget {
     super.key,
     required this.system,
     required this.habits,
+    required this.selectedDate,
     this.onToggleHabit,
     this.onTap,
     this.onDelete,

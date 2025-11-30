@@ -76,6 +76,49 @@ class AIPromptService {
   private buildBehavioralContext(consciousness: UserConsciousness): string {
     const lines: string[] = [];
 
+    // ✅ CRITICAL: Always show productivity evidence FIRST and PROMINENTLY
+    if (consciousness.productivityEvidence) {
+      const pe = consciousness.productivityEvidence;
+      
+      lines.push("═══ PRODUCTIVITY EVIDENCE (LAST 7 DAYS) ═══");
+      
+      if (pe.last7Days.total > 0) {
+        lines.push(
+          `Habits completed: ${pe.last7Days.completed}/${pe.last7Days.total} (${pe.last7Days.completionRate}% completion rate)`
+        );
+      }
+      
+      if (pe.today.completions.length > 0) {
+        const todayHabits = pe.today.completions.map((c) => `${c.title} ✓`).join(", ");
+        lines.push(`Today's wins: ${todayHabits}`);
+      }
+      
+      if (pe.activeStreaks.length > 0) {
+        const streaks = pe.activeStreaks
+          .map((s) => `${s.habitTitle} (${s.streak} days)`)
+          .slice(0, 3)
+          .join(", ");
+        lines.push(`Active streaks: ${streaks}`);
+      }
+      
+      if (pe.recentWins.length > 0) {
+        lines.push(`Recent completions: ${pe.recentWins.slice(0, 3).join(", ")}`);
+      }
+      
+      // ✅ Critical instruction
+      if (pe.last7Days.completionRate >= 60) {
+        lines.push(
+          `⚠️ CRITICAL: User IS being productive (${pe.last7Days.completionRate}% rate). DO NOT say "you're not doing anything". Reference their actual completions.`
+        );
+      } else if (pe.last7Days.completionRate > 0) {
+        lines.push(
+          `Note: User has ${pe.last7Days.completionRate}% completion rate. Acknowledge what they DID complete before addressing gaps.`
+        );
+      }
+      
+      lines.push("═══════════════════════════════════════════");
+    }
+
     if (consciousness.semanticThreads) {
       const st = consciousness.semanticThreads;
 
