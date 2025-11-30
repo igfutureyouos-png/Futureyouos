@@ -172,16 +172,8 @@ Return ONLY valid JSON:
     );
 
     // Save to short-term memory for consciousness system
-    await shortTermMemory.appendConversation(userId, {
-      role: "user",
-      content: userInput,
-      timestamp: new Date(),
-    });
-    await shortTermMemory.appendConversation(userId, {
-      role: "assistant",
-      content: aiMessage,
-      timestamp: new Date(),
-    });
+    await shortTermMemory.appendConversation(userId, "user", userInput, "neutral");
+    await shortTermMemory.appendConversation(userId, "assistant", aiMessage, "balanced");
 
     // Log event for analytics
     await prisma.event.create({
