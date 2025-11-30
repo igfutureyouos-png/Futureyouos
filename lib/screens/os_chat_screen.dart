@@ -426,28 +426,28 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
     switch (message.type) {
       case 'os_brief':
         return _buildOSMessage(
-          message,
+          message: message,
           icon: LucideIcons.sunrise,
           color: const Color(0xFFFFB020), // Orange for morning
           label: 'MORNING BRIEF',
         );
       case 'os_nudge':
         return _buildOSMessage(
-          message,
+          message: message,
           icon: LucideIcons.alertCircle,
           color: const Color(0xFFEF4444), // Red for nudge
           label: 'NUDGE',
         );
       case 'os_debrief':
         return _buildOSMessage(
-          message,
+          message: message,
           icon: LucideIcons.moon,
           color: const Color(0xFF8B5CF6), // Purple for evening
           label: 'EVENING DEBRIEF',
         );
       case 'os_letter':
         return _buildOSMessage(
-          message,
+          message: message,
           icon: LucideIcons.mail,
           color: const Color(0xFF06B6D4), // Cyan for letter
           label: 'WEEKLY LETTER',
