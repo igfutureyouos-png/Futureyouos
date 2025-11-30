@@ -21,8 +21,14 @@ class _CelebritySystemsScreenState extends ConsumerState<CelebritySystemsScreen>
   String _selectedFilter = 'All';
 
   List<CelebritySystem> get _filteredSystems {
-    if (_selectedFilter == 'All') return celebritySystems;
-    return celebritySystems.where((s) => s.tier.contains(_selectedFilter)).toList();
+    // ✅ Filter by tier AND exclude recently chosen systems (24h cooldown)
+    final tierFiltered = _selectedFilter == 'All' 
+        ? celebritySystems 
+        : celebritySystems.where((s) => s.tier.contains(_selectedFilter)).toList();
+    
+    return tierFiltered.where((system) {
+      return !LocalStorageService.wasSystemRecentlyChosen(system.name);
+    }).toList();
   }
 
   @override
@@ -829,6 +835,9 @@ class _CommitDialogState extends ConsumerState<_CommitDialog> {
                             createdAt: DateTime.now(),
                           );
                           LocalStorageService.saveSystem(habitSystem);
+                          
+                          // ✅ Mark this celebrity system as chosen (will be hidden for 24h)
+                          await LocalStorageService.markSystemAsChosen(widget.system.name);
                           
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(

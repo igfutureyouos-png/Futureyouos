@@ -16,7 +16,14 @@ class ViralSystemsScreen extends ConsumerStatefulWidget {
 }
 
 class _ViralSystemsScreenState extends ConsumerState<ViralSystemsScreen> {
-  final List<ViralSystem> _systems = [
+  List<ViralSystem> get _availableSystems {
+    // ✅ Filter out systems chosen in the last 24 hours
+    return _allSystems.where((system) {
+      return !LocalStorageService.wasSystemRecentlyChosen(system.name);
+    }).toList();
+  }
+  
+  final List<ViralSystem> _allSystems = [
     ViralSystem(
       name: '5AM Club',
       tagline: 'Own your morning, own your day',
@@ -186,22 +193,55 @@ class _ViralSystemsScreenState extends ConsumerState<ViralSystemsScreen> {
                 const SizedBox(height: AppSpacing.lg), // ✅ Reduced from xl to lg - pushes systems higher
 
                 // Grid of systems - 1 column to show all habits
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _systems.length,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-                      child: _ViralSystemCard(
-                        system: _systems[index],
-                        onCommit: () => _showCommitDialog(_systems[index]),
-                      ).animate(delay: Duration(milliseconds: index * 50))
-                          .fadeIn(duration: 400.ms)
-                          .slideY(begin: 0.1, end: 0),
-                    );
-                  },
-                ),
+                _availableSystems.isEmpty
+                  ? Container(
+                      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xxl * 2),
+                      padding: const EdgeInsets.all(AppSpacing.xl),
+                      decoration: BoxDecoration(
+                        color: AppColors.glassBackground,
+                        borderRadius: BorderRadius.circular(AppBorderRadius.xl),
+                        border: Border.all(
+                          color: AppColors.emerald.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            LucideIcons.checkCircle,
+                            size: 64,
+                            color: AppColors.emerald.withOpacity(0.6),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          Text(
+                            'You\'ve chosen systems recently!',
+                            style: AppTextStyles.h3.copyWith(color: AppColors.textPrimary),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
+                            'Systems come back after 24 hours.\nFocus on the ones you\'ve committed to!',
+                            style: AppTextStyles.body.copyWith(color: AppColors.textTertiary),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ).animate().fadeIn(duration: 600.ms).scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1))
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _availableSystems.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                          child: _ViralSystemCard(
+                            system: _availableSystems[index],
+                            onCommit: () => _showCommitDialog(_availableSystems[index]),
+                          ).animate(delay: Duration(milliseconds: index * 50))
+                              .fadeIn(duration: 400.ms)
+                              .slideY(begin: 0.1, end: 0),
+                        );
+                      },
+                    ),
 
                 const SizedBox(height: 100),
               ]),
@@ -909,6 +949,9 @@ class _CommitDialogState extends ConsumerState<_CommitDialog> {
                           createdAt: DateTime.now(),
                         );
                         LocalStorageService.saveSystem(habitSystem);
+                        
+                        // ✅ Mark this viral system as chosen (will be hidden for 24h)
+                        await LocalStorageService.markSystemAsChosen(widget.system.name);
                         
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(

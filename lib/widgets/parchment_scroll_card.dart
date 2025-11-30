@@ -511,45 +511,48 @@ class _ParchmentScrollCardState extends State<ParchmentScrollCard>
   }
 
   Widget _buildActions() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildActionButton(
-            label: 'View Reflections',
-            icon: LucideIcons.bookOpen,
-            onPressed: _handleDismiss,
-            isPrimary: true,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildActionButton(
+              label: 'View Reflections',
+              icon: LucideIcons.bookOpen,
+              onPressed: _handleDismiss,
+              isPrimary: true,
+            ),
           ),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        _buildActionButton(
-          label: '',
-          icon: LucideIcons.x,
-          onPressed: () async {
-            try {
-              debugPrint('📜 Dismissing scroll with ${widget.messages.length} messages');
-              
-              // Mark all messages as read to dismiss them
-              for (final message in widget.messages) {
-                await messagesService.markAsRead(message.id);
-                debugPrint('✅ Marked ${message.kind.name} as read: ${message.id}');
+          const SizedBox(width: AppSpacing.md),
+          _buildActionButton(
+            label: '',
+            icon: LucideIcons.x,
+            onPressed: () async {
+              try {
+                debugPrint('📜 Dismissing scroll with ${widget.messages.length} messages');
+                
+                // Mark all messages as read to dismiss them
+                for (final message in widget.messages) {
+                  await messagesService.markAsRead(message.id);
+                  debugPrint('✅ Marked ${message.kind.name} as read: ${message.id}');
+                }
+                
+                // Small delay to ensure state updates propagate
+                await Future.delayed(const Duration(milliseconds: 100));
+                
+                // Notify parent to refresh and hide the card
+                if (widget.onDismiss != null) {
+                  debugPrint('📜 Calling onDismiss callback');
+                  widget.onDismiss!();
+                }
+              } catch (e) {
+                debugPrint('❌ Error dismissing scroll: $e');
               }
-              
-              // Small delay to ensure state updates propagate
-              await Future.delayed(const Duration(milliseconds: 100));
-              
-              // Notify parent to refresh and hide the card
-              if (widget.onDismiss != null) {
-                debugPrint('📜 Calling onDismiss callback');
-                widget.onDismiss!();
-              }
-            } catch (e) {
-              debugPrint('❌ Error dismissing scroll: $e');
-            }
-          },
-          isPrimary: false,
-        ),
-      ],
+            },
+            isPrimary: false,
+          ),
+        ],
+      ),
     );
   }
 
@@ -564,7 +567,7 @@ class _ParchmentScrollCardState extends State<ParchmentScrollCard>
       child: Container(
         padding: EdgeInsets.symmetric(
           vertical: 16,
-          horizontal: isPrimary ? 24 : 16,
+          horizontal: isPrimary ? 20 : 16,
         ),
         decoration: BoxDecoration(
           gradient: isPrimary
@@ -592,7 +595,7 @@ class _ParchmentScrollCardState extends State<ParchmentScrollCard>
               : null,
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: isPrimary ? MainAxisAlignment.start : MainAxisAlignment.center,
           mainAxisSize: isPrimary ? MainAxisSize.max : MainAxisSize.min,
           children: [
             Icon(
@@ -602,13 +605,16 @@ class _ParchmentScrollCardState extends State<ParchmentScrollCard>
             ),
             if (isPrimary && label.isNotEmpty) ...[
               const SizedBox(width: 10),
-              Text(
-                label,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.3,
-                  color: Colors.white,
+              Flexible(
+                child: Text(
+                  label,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.3,
+                    color: Colors.white,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

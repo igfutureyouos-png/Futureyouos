@@ -96,6 +96,27 @@ class LocalStorageService {
   
   static Future<void> clearAllSystems() async =>
       _systemsBox?.clear();
+  
+  // ------------------- VIRAL SYSTEM TRACKING -------------------
+  
+  /// Track when a viral system was chosen (to hide it for 24h)
+  static Future<void> markSystemAsChosen(String systemName) async {
+    await _settingsBox?.put('viral_chosen_$systemName', DateTime.now().toIso8601String());
+  }
+  
+  /// Check if a viral system was chosen in the last 24 hours
+  static bool wasSystemRecentlyChosen(String systemName) {
+    final chosenAtStr = _settingsBox?.get('viral_chosen_$systemName');
+    if (chosenAtStr == null) return false;
+    
+    try {
+      final chosenAt = DateTime.parse(chosenAtStr as String);
+      final hoursSinceChosen = DateTime.now().difference(chosenAt).inHours;
+      return hoursSinceChosen < 24; // Hide for 24 hours
+    } catch (e) {
+      return false;
+    }
+  }
 
   // -------------------  STREAK & ANALYTICS (date-aware)  -------------------
 

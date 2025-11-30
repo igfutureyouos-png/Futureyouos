@@ -103,6 +103,7 @@ class _MainScreenState extends State<MainScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
+      resizeToAvoidBottomInset: false, // ✅ CRITICAL: Prevents bottom nav from moving with keyboard
       body: Container(
         decoration: const BoxDecoration(
           gradient: AppColors.backgroundGradient,
@@ -126,7 +127,7 @@ class _MainScreenState extends State<MainScreen>
                 },
               ),
               
-              // Bottom navigation (always visible)
+              // Bottom navigation (always visible, NEVER moves with keyboard)
               Positioned(
                 left: 0,
                 right: 0,
