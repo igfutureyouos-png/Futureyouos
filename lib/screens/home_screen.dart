@@ -418,6 +418,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                       return SystemCard(
                         system: system,
                         habits: systemHabits,
+                        selectedDate: _selectedDate, // ✅ Pass selected date for date-aware completion
                         onToggleHabit: (habit) async {
                           // ✅ HOME PAGE: Enable habit ticking
                           await ref.read(habitEngineProvider.notifier).toggleHabitCompletion(habit.id);

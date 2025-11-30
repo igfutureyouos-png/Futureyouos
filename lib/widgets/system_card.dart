@@ -31,7 +31,8 @@ class SystemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final completedCount = habits.where((h) => h.done).length;
+    // ✅ Use date-aware completion check
+    final completedCount = habits.where((h) => h.isDoneOn(selectedDate)).length;
     final totalCount = habits.length;
     final completion = totalCount > 0 ? (completedCount / totalCount * 100).toInt() : 0;
     final gradient = LinearGradient(
@@ -241,10 +242,12 @@ class SystemCard extends StatelessWidget {
   Widget _buildHabitTile(Habit habit) {
     final accentColor = system.gradientColors.first;
     final isReadOnly = onToggleHabit == null; // Read-only if no toggle callback
+    // ✅ Use date-aware completion check
+    final isDone = habit.isDoneOn(selectedDate);
     
     return GestureDetector(
       // Only allow tapping if onToggleHabit is provided AND habit not already done
-      onTap: (onToggleHabit != null && !habit.done) 
+      onTap: (onToggleHabit != null && !isDone) 
           ? () => onToggleHabit!(habit) 
           : null,
       child: Container(
@@ -289,14 +292,14 @@ class SystemCard extends StatelessWidget {
                 width: 18,
                 height: 18,
                 decoration: BoxDecoration(
-                  color: habit.done ? accentColor : Colors.white.withOpacity(0.1),
+                  color: isDone ? accentColor : Colors.white.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: habit.done ? accentColor : Colors.white.withOpacity(0.3),
+                    color: isDone ? accentColor : Colors.white.withOpacity(0.3),
                     width: 2,
                   ),
                 ),
-                child: habit.done
+                child: isDone
                     ? const Icon(
                         Icons.check,
                         size: 12,
@@ -313,7 +316,7 @@ class SystemCard extends StatelessWidget {
                   color: Colors.white.withOpacity(isReadOnly ? 0.85 : 0.95),
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  decoration: (!isReadOnly && habit.done) ? TextDecoration.lineThrough : null,
+                  decoration: (!isReadOnly && isDone) ? TextDecoration.lineThrough : null,
                   decorationColor: Colors.white.withOpacity(0.5),
                 ),
                 maxLines: 1,

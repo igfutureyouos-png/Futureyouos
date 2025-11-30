@@ -794,6 +794,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
             return SystemCard(
               system: system,
               habits: systemHabits,
+              selectedDate: DateTime.now(), // ✅ Planner always shows today's status
               // ✅ REMOVED onDelete - only individual habit deletion now
               // ✅ Delete individual habits one at a time (orange button)
               onDeleteHabits: () async {
