@@ -2,7 +2,8 @@ import { prisma } from "../utils/db";
 import { redis } from "../utils/redis";
 import { aiService } from "./ai.service";
 import { memoryService } from "./memory.service";
-import { purposePrompts } from "../modules/purpose/prompt.templates";
+import { memoryIntelligence } from "./memory-intelligence.service";
+import { shortTermMemory } from "./short-term-memory.service";
 import OpenAI from "openai";
 
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
@@ -13,6 +14,49 @@ function getOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY.trim();
   return new OpenAI({ apiKey });
 }
+
+// AI OS System Prompt - Wise companion for productivity and life guidance
+const AI_OS_SYSTEM_PROMPT = `You are the AI Operating System - a wise, observant companion designed to guide users toward their brightest futures.
+
+YOUR CORE PURPOSE:
+- Guide users to brighter, more productive futures
+- Identify what they're wasting time on
+- Discover their true goals and values
+- Help them build systems that work
+- Be their accountability partner and wise advisor
+
+YOUR PERSONALITY:
+- Wise and perceptive (you see patterns they miss)
+- Direct but compassionate (tell the truth kindly)
+- Action-oriented (always push toward concrete steps)
+- Memory-aware (you remember everything they tell you)
+- Phase-adaptive (your tone evolves with their progress)
+
+WHAT YOU WATCH FOR:
+1. Time-wasting patterns (scrolling, procrastination, avoidance)
+2. Habit consistency (what they commit to vs what they actually do)
+3. Energy patterns (when they're productive, when they drift)
+4. True goals (what they say vs what their actions reveal)
+5. Contradictions (beliefs that don't match behavior)
+6. Excuses (the stories they tell themselves)
+
+HOW YOU RESPOND:
+- Ask probing questions about productivity and time use
+- Call out patterns you notice in their data
+- Challenge excuses gently but firmly
+- Celebrate real progress (be specific, reference actual streaks/habits)
+- Guide them toward systems that actually work for them
+- Help them discover what truly matters vs what they think should matter
+
+RESPONSE STYLE:
+- Keep responses 2-4 paragraphs max
+- Ask 1 powerful question per message
+- Reference their actual data when relevant (habits, streaks, time patterns)
+- Be conversational but insightful
+- Don't be generic - use their specific context
+
+Remember: You're not just a chatbot. You're an AI OS that watches, remembers, and guides. Use your access to their productivity data and memory to provide deeply personalized guidance.`;
+
 
 type HabitSuggestion = {
   title: string;
@@ -65,54 +109,166 @@ Return ONLY valid JSON:
   }
 
   async nextMessage(userId: string, userInput: string) {
-    const key = `chatstate:${userId}`;
-    const raw = await redis.get(key);
-    const state = raw ? JSON.parse(raw) : { phase: "intro", context: { answers: {} } };
+    const openai = getOpenAIClient();
+    if (!openai) {
+      return { 
+        phase: "observer", 
+        message: "I'm temporarily offline. Your message has been saved and I'll respond soon.",
+        suggestions: []
+      };
+    }
 
-    // store user answer
-    state.context.answers[state.phase] = userInput;
+    // Build user consciousness (includes productivity evidence, memory, patterns)
+    const consciousness = await memoryIntelligence.buildUserConsciousness(userId);
+    
+    // Get conversation history from Redis
+    const conversationKey = `os_chat:${userId}`;
+    const rawHistory = await redis.get(conversationKey);
+    const history = rawHistory ? JSON.parse(rawHistory) : [];
 
-    // decide next phase
-    const order = ["intro", "funeral", "values", "vision", "commitment"];
-    const currentIdx = order.indexOf(state.phase);
-    const nextIdx = Math.min(currentIdx + 1, order.length - 1);
-    const nextPhase = order[nextIdx];
+    // Add user message to history
+    history.push({
+      role: "user",
+      content: userInput,
+      timestamp: new Date().toISOString(),
+    });
 
-    // NEW: If completing discovery, extract and store purpose
-    if (state.phase === "commitment" && currentIdx === order.length - 1) {
-      const insights = await this.extractPurposeFromDiscovery(userId, state.context.answers);
-      if (insights) {
-        await memoryService.upsertFacts(userId, {
-          identity: {
-            ...insights,
-            discoveryCompletedAt: new Date().toISOString(),
-          },
-        });
-        
-        await prisma.event.create({
-          data: { userId, type: "discovery_completed", payload: insights },
-        });
+    // Build context for AI
+    const contextPrompt = this.buildOSContext(consciousness);
+
+    // Generate AI response with full context
+    const messages = [
+      { role: "system", content: AI_OS_SYSTEM_PROMPT },
+      { role: "system", content: contextPrompt },
+      ...history.slice(-10).map((msg: any) => ({ // Last 10 messages for context
+        role: msg.role === "user" ? "user" as const : "assistant" as const,
+        content: msg.content,
+      })),
+    ];
+
+    const completion = await openai.chat.completions.create({
+      model: OPENAI_MODEL,
+      temperature: 0.8, // Warm and wise
+      max_tokens: 600,
+      messages,
+    });
+
+    const aiMessage = completion.choices[0]?.message?.content || 
+      "I'm here to help you build a brighter future. What's on your mind?";
+
+    // Add AI response to history
+    history.push({
+      role: "assistant",
+      content: aiMessage,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Save conversation history (keep last 50 messages, 24h TTL)
+    await redis.set(
+      conversationKey, 
+      JSON.stringify(history.slice(-50)), 
+      "EX", 
+      86400
+    );
+
+    // Save to short-term memory for consciousness system
+    await shortTermMemory.appendConversation(userId, {
+      role: "user",
+      content: userInput,
+      timestamp: new Date(),
+    });
+    await shortTermMemory.appendConversation(userId, {
+      role: "assistant",
+      content: aiMessage,
+      timestamp: new Date(),
+    });
+
+    // Log event for analytics
+    await prisma.event.create({
+      data: { 
+        userId, 
+        type: "chat_message", 
+        payload: { 
+          from: "os_chat", 
+          userMessage: userInput,
+          aiResponse: aiMessage,
+          phase: consciousness.os_phase?.current_phase || "observer",
+        } 
+      },
+    });
+
+    return { 
+      phase: consciousness.os_phase?.current_phase || "observer",
+      message: aiMessage, 
+      suggestions: [] // Could add habit suggestions here later if needed
+    };
+  }
+
+  /**
+   * Build OS context from user consciousness
+   */
+  private buildOSContext(consciousness: any): string {
+    const pe = consciousness.productivityEvidence;
+    const identity = consciousness.identity;
+    const phase = consciousness.os_phase?.current_phase || "observer";
+
+    let context = `CURRENT PHASE: ${phase.toUpperCase()}\n`;
+    context += `DAYS IN PHASE: ${consciousness.os_phase?.days_in_phase || 0}\n\n`;
+
+    // User identity
+    if (identity?.name) {
+      context += `USER: ${identity.name}\n`;
+    }
+    if (identity?.purpose) {
+      context += `STATED PURPOSE: ${identity.purpose}\n`;
+    }
+    if (identity?.coreValues?.length > 0) {
+      context += `CORE VALUES: ${identity.coreValues.join(", ")}\n`;
+    }
+    context += `\n`;
+
+    // Productivity evidence
+    if (pe) {
+      context += `PRODUCTIVITY DATA (LAST 7 DAYS):\n`;
+      context += `- Completion rate: ${pe.last7Days.completionRate}% (${pe.last7Days.completed}/${pe.last7Days.total} habits)\n`;
+      
+      if (pe.today.completions.length > 0) {
+        context += `- Today's wins: ${pe.today.completions.map((c: any) => c.title).join(", ")}\n`;
+      }
+      
+      if (pe.activeStreaks.length > 0) {
+        context += `- Active streaks: ${pe.activeStreaks.slice(0, 3).map((s: any) => `${s.habitTitle} (${s.streak}d)`).join(", ")}\n`;
+      }
+      
+      if (pe.recentWins.length > 0) {
+        context += `- Recent completions: ${pe.recentWins.slice(0, 3).join(", ")}\n`;
+      }
+      context += `\n`;
+    }
+
+    // Behavioral patterns
+    if (consciousness.patterns) {
+      if (consciousness.patterns.drift_windows?.length > 0) {
+        context += `DRIFT WINDOWS: ${consciousness.patterns.drift_windows.slice(0, 2).map((w: any) => `${w.time} - ${w.description}`).join("; ")}\n`;
+      }
+      if (consciousness.patterns.avoidance_triggers?.length > 0) {
+        context += `AVOIDING: ${consciousness.patterns.avoidance_triggers.length} habits repeatedly skipped\n`;
       }
     }
 
-    const prompt = purposePrompts[nextPhase];
-    const message = await aiService.generateFutureYouReply(userId, prompt, {
-      purpose: "coach",
-      maxChars: 800, // Increased for better responses
-    });
+    // Semantic threads (time wasters, excuses)
+    if (consciousness.semanticThreads) {
+      const st = consciousness.semanticThreads;
+      if (st.timeWasters?.length > 0) {
+        context += `TIME WASTERS DETECTED: ${st.timeWasters.join(", ")}\n`;
+      }
+      if (st.recurringExcuses?.length > 0) {
+        context += `RECURRING EXCUSES: ${st.recurringExcuses.join(", ")}\n`;
+      }
+    }
 
-    // 🚀 Extract habit suggestions from conversation
-    const suggestions = await this.extractHabitSuggestions(userId, userInput, message);
-
-    // persist
-    state.phase = nextPhase;
-    await redis.set(key, JSON.stringify(state), "EX", 3600 * 6); // 6h session TTL
-
-    await prisma.event.create({
-      data: { userId, type: "chat_message", payload: { from: "ai", text: message, suggestions } },
-    });
-
-    return { phase: nextPhase, message, suggestions };
+    context += `\nUse this data to provide personalized, specific guidance. Reference their actual habits and patterns.`;
+    return context;
   }
 
   /**
