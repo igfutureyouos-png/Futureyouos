@@ -330,7 +330,7 @@ export class MemoryIntelligenceService {
   }
 
   // ============================================================
-  // 📊 Extract Productivity Evidence from Habit Actions
+  // 📊 Extract Productivity Evidence from Habit Actions  
   // ============================================================
   private async extractProductivityEvidence(userId: string): Promise<ProductivityEvidence> {
     try {
@@ -395,28 +395,27 @@ export class MemoryIntelligenceService {
           return {
             title: habit.title,
             completedAt: new Date(e.ts),
-            streak: habit.streak,
+            streak: this.calculateStreakFromEvents(payload.habitId, recentActions),
           };
         })
         .filter((c): c is HabitCompletionData => c !== null)
         .slice(0, 10); // Limit to 10 most recent
 
-      // Get active streaks (habits with streak >= 3)
-      const activeStreaks = habits
-        .filter((h) => h.streak >= 3)
-        .map((h) => ({ habitTitle: h.title, streak: h.streak }))
+      // Calculate REAL streaks from Events (not from Habit table which is stale)
+      const activeStreaks = this.calculateAllStreaks(habits, recentActions)
+        .filter((s) => s.streak >= 3)
         .sort((a, b) => b.streak - a.streak)
         .slice(0, 5); // Top 5 streaks
 
-      // Recent wins (last 5 completed habits)
+      // Recent wins (last 5 completed habits with actual names)
       const recentWins = completedLast7Days
         .slice(0, 5)
         .map((e) => {
           const payload = e.payload as any;
           const habit = habitMap.get(payload.habitId);
-          return habit?.title || "Unknown habit";
+          return habit?.title || null;
         })
-        .filter((title) => title !== "Unknown habit");
+        .filter((title): title is string => title !== null);
 
       return {
         last7Days: {
@@ -441,6 +440,47 @@ export class MemoryIntelligenceService {
         recentWins: [],
       };
     }
+  }
+
+  /**
+   * Calculate current streak for a habit from Event data
+   */
+  private calculateStreakFromEvents(habitId: string, events: any[]): number {
+    const habitEvents = events
+      .filter((e) => (e.payload as any)?.habitId === habitId)
+      .sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
+
+    let streak = 0;
+    let currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+
+    for (const event of habitEvents) {
+      const eventDate = new Date(event.ts);
+      eventDate.setHours(0, 0, 0, 0);
+      
+      const payload = event.payload as any;
+      
+      // Check if this event is from today or consecutive days
+      const daysDiff = Math.floor((currentDate.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysDiff === streak && payload.completed === true) {
+        streak++;
+      } else if (daysDiff > streak) {
+        break; // Streak broken
+      }
+    }
+
+    return streak;
+  }
+
+  /**
+   * Calculate streaks for all habits from Event data
+   */
+  private calculateAllStreaks(habits: any[], events: any[]): Array<{ habitTitle: string; streak: number }> {
+    return habits.map((habit) => ({
+      habitTitle: habit.title,
+      streak: this.calculateStreakFromEvents(habit.id, events),
+    }));
   }
 
   /**
