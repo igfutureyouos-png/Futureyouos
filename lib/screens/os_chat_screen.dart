@@ -270,7 +270,7 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                 Positioned(
                   left: 0,
                   right: 0,
-                  bottom: 100 + keyboardHeight, // 100px for bottom nav, then keyboard height
+                  bottom: keyboardHeight > 0 ? keyboardHeight : 100, // Sits ON TOP of keyboard when open, above nav when closed
                   child: Container(
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     decoration: BoxDecoration(
