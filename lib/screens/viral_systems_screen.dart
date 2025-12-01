@@ -885,14 +885,18 @@ class _CommitDialogState extends ConsumerState<_CommitDialog> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () async {
-                      Navigator.pop(context);
+                      // ✅ FIX: DON'T close dialog yet - do work first!
+                      // Navigator.pop moved to end of function
                       
                       // Count selected habits
                       final selectedCount = _selectedHabits.where((selected) => selected).length;
                       if (selectedCount == 0) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('⚠️ Please select at least one habit')),
-                        );
+                        Navigator.pop(context); // Close dialog BEFORE showing error
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('⚠️ Please select at least one habit')),
+                          );
+                        }
                         return;
                       }
                       
@@ -953,6 +957,9 @@ class _CommitDialogState extends ConsumerState<_CommitDialog> {
                         // ✅ Mark this viral system as chosen (will be hidden for 24h)
                         await LocalStorageService.markSystemAsChosen(widget.system.name);
                         
+                        // ✅ FIX: Close dialog AFTER successful commit
+                        Navigator.pop(context);
+                        
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -963,11 +970,15 @@ class _CommitDialogState extends ConsumerState<_CommitDialog> {
                           );
                         }
                       } catch (e) {
+                        // ✅ FIX: Close dialog BEFORE showing error
+                        Navigator.pop(context);
+                        
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text('❌ Failed to commit: $e'),
                               backgroundColor: Colors.red,
+                              duration: const Duration(seconds: 2),
                             ),
                           );
                         }
