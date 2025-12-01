@@ -512,30 +512,8 @@ export class WhatIfChatService {
     // Store preset in history for context continuity
     const currentPreset = preset || history.find((m: any) => m.preset)?.preset || 'habit-master';
     
-    // 🎯 WELCOME MESSAGE: If this is first message with a preset, send welcome
-    if (history.length === 0 && preset) {
-      const welcomeMessages = {
-        'simulator': `🔮 **What-If Simulator Activated**
-
-I'm your personal Future-Simulator, powered by the latest behavioral science and longitudinal health studies.
-
-My job: Ask sharp questions, collect your reality (training, sleep, food, timeline), then show you **two futures**—one where you stay the same, one where you commit fully—with real evidence for what changes, why it works, and how it feels at 3, 6, and 12 months.
-
-Let's start simple. **What's the goal or change you're exploring?** (e.g., "build muscle," "more energy," "lose fat")`,
-        'habit-master': `🧩 **Habit Master Activated**
-
-I'm your behavioral architect, trained on implementation science from Fogg, Clear, Duhigg, and decades of habit formation research.
-
-My job: Understand your reality (schedule, energy, environment, existing habits), then design a **3-phase plan** that removes friction, builds momentum, and creates lasting change—backed by studies and real-world proof.
-
-First question: **What habit or goal are you trying to build?** Be specific.`
-      };
-      
-      return {
-        message: welcomeMessages[preset],
-        chat: welcomeMessages[preset]
-      };
-    }
+    // ❌ REMOVED WELCOME MESSAGE - it was blocking card generation!
+    // Just process the user's actual scenario immediately
 
     const conversationType = this.detectConversationType(userMessage, ctx.habitSummaries);
 
