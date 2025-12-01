@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/habit.dart';
 import '../models/habit_system.dart';
 import '../design/tokens.dart';
 
 /// Beautiful glass morphism card for displaying habit systems
 /// Two modes: Tickable (Home) or Read-only with Delete (Planner)
-class SystemCard extends StatelessWidget {
+/// ✅ NEW: Collapsible on Home page - click chevron to collapse/expand
+class SystemCard extends StatefulWidget {
   final HabitSystem system;
   final List<Habit> habits;
   final DateTime selectedDate; // Date to check completion status
@@ -30,19 +32,50 @@ class SystemCard extends StatelessWidget {
   });
 
   @override
+  State<SystemCard> createState() => _SystemCardState();
+}
+
+class _SystemCardState extends State<SystemCard> {
+  bool _isCollapsed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCollapsedState();
+  }
+
+  Future<void> _loadCollapsedState() async {
+    // Only load collapse state for Home page (when onToggleHabit is provided)
+    if (widget.onToggleHabit == null) return;
+    
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isCollapsed = prefs.getBool('system_collapsed_${widget.system.id}') ?? false;
+    });
+  }
+
+  Future<void> _toggleCollapsed() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isCollapsed = !_isCollapsed;
+    });
+    await prefs.setBool('system_collapsed_${widget.system.id}', _isCollapsed);
+  }
+
+  @override
   Widget build(BuildContext context) {
     // ✅ Use date-aware completion check
-    final completedCount = habits.where((h) => h.isDoneOn(selectedDate)).length;
-    final totalCount = habits.length;
+    final completedCount = widget.habits.where((h) => h.isDoneOn(widget.selectedDate)).length;
+    final totalCount = widget.habits.length;
     final completion = totalCount > 0 ? (completedCount / totalCount * 100).toInt() : 0;
     final gradient = LinearGradient(
-      colors: system.gradientColors,
+      colors: widget.system.gradientColors,
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.md),
         decoration: BoxDecoration(
@@ -104,7 +137,7 @@ class SystemCard extends StatelessWidget {
                           ),
                           child: Center(
                             child: Text(
-                              system.name.isNotEmpty ? system.name[0].toUpperCase() : '⭐',
+                              widget.system.name.isNotEmpty ? widget.system.name[0].toUpperCase() : '⭐',
                               style: const TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
@@ -119,7 +152,7 @@ class SystemCard extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                system.name,
+                                widget.system.name,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 18,
@@ -130,24 +163,43 @@ class SystemCard extends StatelessWidget {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                onDelete != null
-                                    ? '${habits.length} habits • Read-only'
+                                widget.onDelete != null
+                                    ? '${widget.habits.length} habits • Read-only'
                                     : '$completedCount/$totalCount habits today',
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(onDelete != null ? 0.6 : 0.8),
+                                  color: Colors.white.withOpacity(widget.onDelete != null ? 0.6 : 0.8),
                                   fontSize: 13,
-                                  fontStyle: onDelete != null ? FontStyle.italic : FontStyle.normal,
+                                  fontStyle: widget.onDelete != null ? FontStyle.italic : FontStyle.normal,
                                 ),
                               ),
                             ],
                           ),
                         ),
                         // ✅ FIX 4: Stunning progress circle (only on Home page - when onToggleHabit is provided)
-                        if (onToggleHabit != null) _buildProgressRing(completion, system.gradientColors.first),
-                        // Delete individual habits button (orange)
-                        if (onDeleteHabits != null)
+                        if (widget.onToggleHabit != null) _buildProgressRing(completion, widget.system.gradientColors.first),
+                        // ✅ NEW: Collapse/Expand button (only on Home page)
+                        if (widget.onToggleHabit != null) ...[
+                          const SizedBox(width: 8),
                           GestureDetector(
-                            onTap: onDeleteHabits,
+                            onTap: _toggleCollapsed,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                _isCollapsed ? LucideIcons.chevronDown : LucideIcons.chevronUp,
+                                size: 18,
+                                color: Colors.white.withOpacity(0.9),
+                              ),
+                            ),
+                          ),
+                        ],
+                        // Delete individual habits button (orange)
+                        if (widget.onDeleteHabits != null)
+                          GestureDetector(
+                            onTap: widget.onDeleteHabits,
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
@@ -161,11 +213,11 @@ class SystemCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                        if (onDeleteHabits != null) const SizedBox(width: 8),
+                        if (widget.onDeleteHabits != null) const SizedBox(width: 8),
                         // Delete entire system button (red)
-                        if (onDelete != null)
+                        if (widget.onDelete != null)
                           GestureDetector(
-                            onTap: onDelete,
+                            onTap: widget.onDelete,
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
@@ -182,10 +234,12 @@ class SystemCard extends StatelessWidget {
                       ],
                     ),
 
-                    const SizedBox(height: AppSpacing.md),
-
-                    // Habits Grid
-                    _buildHabitsGrid(),
+                    // ✅ Only show habits grid if NOT collapsed (or on Planner page)
+                    if (!_isCollapsed || widget.onToggleHabit == null) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      // Habits Grid
+                      _buildHabitsGrid(),
+                    ],
                   ],
                 ),
               ),
@@ -232,7 +286,7 @@ class SystemCard extends StatelessWidget {
   Widget _buildHabitsGrid() {
     // ✅ FIX 1: One habit per line for better readability
     return Column(
-      children: habits.map((habit) => Padding(
+      children: widget.habits.map((habit) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: _buildHabitTile(habit),
       )).toList(),
@@ -240,15 +294,15 @@ class SystemCard extends StatelessWidget {
   }
 
   Widget _buildHabitTile(Habit habit) {
-    final accentColor = system.gradientColors.first;
-    final isReadOnly = onToggleHabit == null; // Read-only if no toggle callback
+    final accentColor = widget.system.gradientColors.first;
+    final isReadOnly = widget.onToggleHabit == null; // Read-only if no toggle callback
     // ✅ Use date-aware completion check
-    final isDone = habit.isDoneOn(selectedDate);
+    final isDone = habit.isDoneOn(widget.selectedDate);
     
     return GestureDetector(
       // Only allow tapping if onToggleHabit is provided AND habit not already done
-      onTap: (onToggleHabit != null && !isDone) 
-          ? () => onToggleHabit!(habit) 
+      onTap: (widget.onToggleHabit != null && !isDone) 
+          ? () => widget.onToggleHabit!(habit) 
           : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),

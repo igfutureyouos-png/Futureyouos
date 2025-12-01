@@ -445,12 +445,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                 ),
               ),
             
-            const SizedBox(height: AppSpacing.xl),
-            
-            // Week Overview Card
-            WeekOverviewCard(
-              stats: WeeklyStatsService.calculateCurrentWeekStats(),
-            ),
+            // ✅ REMOVED FOR NOW - Week Overview Card (saved for future version)
+            // const SizedBox(height: AppSpacing.xl),
+            // WeekOverviewCard(
+            //   stats: WeeklyStatsService.calculateCurrentWeekStats(),
+            // ),
             
             // Bottom padding for nav bar (extra space for breathing room)
             const SizedBox(height: 150),
