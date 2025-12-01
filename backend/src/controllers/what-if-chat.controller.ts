@@ -43,11 +43,14 @@ export async function whatIfChatController(fastify: FastifyInstance) {
         ? preset 
         : 'habit-master';
 
+      console.log(`📝 What-If request: preset=${effectivePreset}, messageLength=${message.length}`);
       const response = await whatIfChatService.chat(userId, message, effectivePreset);
+      console.log(`✅ What-If response generated: hasOutputCard=${!!response.outputCard}, habitsCount=${response.habits?.length || 0}`);
       return response; // Returns { message, outputCard?, habits?, sources? }
     } catch (err: any) {
-      console.error("What-If coach error:", err);
-      return reply.code(err.statusCode || 500).send({ error: err.message });
+      console.error("❌ What-If coach error:", err.message);
+      console.error("Stack trace:", err.stack);
+      return reply.code(err.statusCode || 500).send({ error: err.message || 'Failed to generate simulation' });
     }
   });
 

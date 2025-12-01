@@ -546,16 +546,24 @@ TASK: Generate cinematic, evidence-based responses. Cite peer-reviewed studies n
     const fullSystemPrompt = `${systemPrompt}\n\n${contextString}`;
 
     // Call OpenAI directly - use GPT-4o-mini for best results
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // GPT-4 Omni Mini - fast and smart
-      max_completion_tokens: 16000, // Increased for full output cards
-      messages: [
-        { role: "system", content: fullSystemPrompt },
-        { role: "user", content: userMessage }
-      ]
-    });
+    let responseText: string;
+    try {
+      console.log('🤖 Calling OpenAI with model: gpt-4o-mini');
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini", // GPT-4 Omni Mini - fast and smart
+        max_completion_tokens: 16000, // Increased for full output cards
+        messages: [
+          { role: "system", content: fullSystemPrompt },
+          { role: "user", content: userMessage }
+        ]
+      });
 
-    const responseText = completion.choices[0]?.message?.content?.trim() || "Let's break this down systematically.";
+      responseText = completion.choices[0]?.message?.content?.trim() || "Let's break this down systematically.";
+      console.log('✅ OpenAI response received, length:', responseText.length);
+    } catch (openaiError: any) {
+      console.error('❌ OpenAI API Error:', openaiError.message);
+      throw new Error(`AI generation failed: ${openaiError.message}`);
+    }
 
     // Parse for card sections
     const parsed = this.parseCardSections(responseText);
