@@ -66,7 +66,8 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
 
   Future<void> _loadTimeline() async {
     // Load OS messages (briefs, nudges, debriefs, letters)
-    final osMessages = _messagesService.getAllMessages();
+    // ✅ FILTER: Only show UNREAD messages in chat
+    final osMessages = _messagesService.getAllMessages().where((msg) => !msg.isRead).toList();
     
     // Convert OS messages to timeline messages
     final timelineFromOS = osMessages.map((msg) {
