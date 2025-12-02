@@ -6,7 +6,9 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../design/tokens.dart';
 import '../services/api_client.dart';
 import '../services/messages_service.dart';
+import '../services/premium_service.dart';
 import '../models/coach_message.dart' as model;
+import '../widgets/paywall_dialog.dart';
 
 /// Unified message type for timeline (OS messages + chat)
 class TimelineMessage {
@@ -110,6 +112,18 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
   Future<void> _sendMessage() async {
     final text = _inputController.text.trim();
     if (text.isEmpty || _isLoading) return;
+
+    // ✅ PAYWALL: Check premium status before allowing AI chat
+    final isPremium = await PremiumService.isPremium();
+    if (!isPremium) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => const PaywallDialog(feature: 'AI Chat'),
+        );
+      }
+      return;
+    }
 
     // Add user message to timeline
     final userMessage = TimelineMessage(

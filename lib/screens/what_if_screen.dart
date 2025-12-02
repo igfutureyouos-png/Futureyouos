@@ -6,9 +6,11 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../design/tokens.dart';
 import '../services/api_client.dart';
 import '../services/habit_vault_service.dart';
+import '../services/premium_service.dart';
 import '../models/vault_item.dart';
 import '../providers/habit_provider.dart';
 import '../widgets/simple_header.dart';
+import '../widgets/paywall_dialog.dart';
 
 class GoalData {
   final int id;
@@ -324,6 +326,18 @@ class _WhatIfScreenState extends ConsumerState<WhatIfScreen> {
   Future<void> _sendChatMessage() async {
     final message = _chatInputController.text.trim();
     if (message.isEmpty) return;
+
+    // ✅ PAYWALL: Check premium status before allowing What-If engine
+    final isPremium = await PremiumService.isPremium();
+    if (!isPremium) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => const PaywallDialog(feature: 'What If Engine'),
+        );
+      }
+      return;
+    }
 
     final userMessage = ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),

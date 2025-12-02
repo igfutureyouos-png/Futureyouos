@@ -5,6 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../design/tokens.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/glass_button.dart';
+import '../widgets/premium_debug_toggle.dart';
 import '../services/local_storage.dart';
 import '../services/auth_service.dart';
 import '../providers/habit_provider.dart';
