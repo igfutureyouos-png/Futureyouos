@@ -161,13 +161,14 @@ class WelcomeSeriesLocal {
       id: 'welcome_day_${dayContent.day}',
       userId: 'test-user-felix', // Will be set by caller if different
       kind: model.MessageKind.awakening, // ✅ Use awakening kind for separate UI
-      title: dayContent.title,
+      title: '${dayContent.moonPhase} ${dayContent.title}',
       body: dayContent.body,
       createdAt: DateTime.now(),
       isRead: false,
       meta: {
         'source': 'welcome_series',
         'day': dayContent.day,
+        'moonPhase': dayContent.moonPhase,
         'audioUrl': dayContent.audioUrl,
       },
     );

@@ -349,28 +349,36 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                       // Header
                       _buildHeader(),
                       
-                      // 🎯 STATUS HUD
-                      if (_metrics != null)
-                        SliverToBoxAdapter(
-                          child: OSStatusHUD(
-                            metrics: _metrics!,
-                            animate: true,
+                      // 🎯 STATUS HUD (Always show, use defaults if null)
+                      SliverToBoxAdapter(
+                        child: OSStatusHUD(
+                          metrics: _metrics ?? OSMetrics(
+                            disciplinePercentage: 0.0,
+                            currentStreak: 0,
+                            longestStreak: 0,
+                            systemStrength: 0.0,
                           ),
+                          animate: true,
                         ),
+                      ),
                       
-                      // 🌟 GLOWING ORB
-                      if (_metrics != null)
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-                            child: OSGlowingOrb(
-                              metrics: _metrics!,
-                              size: 120,
+                      // 🌟 GLOWING ORB (Always show, use defaults if null)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                          child: OSGlowingOrb(
+                            metrics: _metrics ?? OSMetrics(
+                              disciplinePercentage: 0.0,
+                              currentStreak: 0,
+                              longestStreak: 0,
+                              systemStrength: 0.0,
                             ),
-                          ).animate()
-                            .fadeIn(duration: 600.ms, delay: 200.ms)
-                            .scale(begin: const Offset(0.8, 0.8), duration: 600.ms, delay: 200.ms),
-                        ),
+                            size: 120,
+                          ),
+                        ).animate()
+                          .fadeIn(duration: 600.ms, delay: 200.ms)
+                          .scale(begin: const Offset(0.8, 0.8), duration: 600.ms, delay: 200.ms),
+                      ),
                       
                       // Timeline messages
                       SliverPadding(

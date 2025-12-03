@@ -227,7 +227,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
         barrierDismissible: false,
         builder: (context) => WelcomeDayModal(
           day: dayContent.day,
-          moonPhase: '🌑', // Default moon phase
+          moonPhase: dayContent.moonPhase,
           title: dayContent.title,
           content: dayContent.body,
           onContinue: () async {
@@ -389,33 +389,91 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
             // Habit cards (System cards + Standalone habits)
             if (dayHabits.isEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl * 2),
-                child: GlassCard(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        LucideIcons.calendar,
-                        size: 32,
-                        color: AppColors.textQuaternary,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        'Nothing here yet',
-                        style: AppTextStyles.bodySemiBold.copyWith(
-                          color: AppColors.textSecondary,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: Column(
+                  children: [
+                    const SizedBox(height: AppSpacing.xxl),
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.xl),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.emerald.withOpacity(0.1),
+                            AppColors.emerald.withOpacity(0.05),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(AppBorderRadius.xl),
+                        border: Border.all(
+                          color: AppColors.emerald.withOpacity(0.2),
                         ),
                       ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        'Add a habit or task in Planner.',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textTertiary,
-                        ),
-                        textAlign: TextAlign.center,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(AppSpacing.lg),
+                            decoration: BoxDecoration(
+                              color: AppColors.emerald.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              LucideIcons.target,
+                              size: 48,
+                              color: AppColors.emerald,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          Text(
+                            'Start Your Journey',
+                            style: AppTextStyles.h2.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
+                            'Build your discipline system.\nAdd habits in the Planner tab to begin.',
+                            style: AppTextStyles.body.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg,
+                              vertical: AppSpacing.md,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: AppColors.emeraldGradient,
+                              borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  LucideIcons.arrowRight,
+                                  color: Colors.black,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                Text(
+                                  'Go to Planner',
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: AppSpacing.xxl),
+                  ],
                 ),
               ),
             
