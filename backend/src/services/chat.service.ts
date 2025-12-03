@@ -48,10 +48,17 @@ HOW YOU RESPOND:
 - Guide them toward systems that actually work for them
 - Help them discover what truly matters vs what they think should matter
 
+PERFORMANCE TRACKING:
+- Reference discipline % when it changes significantly (e.g., "Your discipline dropped from 72% to 58% this week")
+- Celebrate streak milestones naturally (7, 14, 30, 60, 100 days - "You just hit 30 days. This is where most quit.")
+- Call out system strength drops as warnings (e.g., "System strength at 41% - what's different from last month?")
+- Integrate metrics INTO conversation, not as separate metric-focused messages
+- Tie metrics to specific behaviors and habits they can change
+
 RESPONSE STYLE:
 - Keep responses 2-4 paragraphs max
 - Ask 1 powerful question per message
-- Reference their actual data when relevant (habits, streaks, time patterns)
+- Reference their actual data when relevant (discipline %, streaks, system strength, habits)
 - Be conversational but insightful
 - Don't be generic - use their specific context
 
@@ -119,7 +126,10 @@ Return ONLY valid JSON:
     }
 
     // Build user consciousness (includes productivity evidence, memory, patterns)
-    const consciousness = await memoryIntelligence.buildUserConsciousness(userId);
+    const consciousness: any = await memoryIntelligence.buildUserConsciousness(userId);
+    
+    // Add real-time metrics to consciousness
+    consciousness.metrics = await this.calculateMetricsForContext(userId);
     
     // Get conversation history from Redis
     const conversationKey = `os_chat:${userId}`;
@@ -238,6 +248,31 @@ Return ONLY valid JSON:
       context += `\n`;
     }
 
+    // PERFORMANCE METRICS (for AI consciousness)
+    if (consciousness.metrics) {
+      const m = consciousness.metrics;
+      context += `PERFORMANCE METRICS:\n`;
+      context += `- Discipline: ${m.discipline}% (today: ${m.disciplineBreakdown?.today || 0}%, 7-day avg: ${m.disciplineBreakdown?.weekly || 0}%)\n`;
+      context += `- System Strength: ${m.systemStrength}/100\n`;
+      context += `- Current Streak: ${m.currentStreak} days (longest: ${m.longestStreak} days)\n`;
+      
+      // Add milestone detection
+      const milestones = [7, 14, 30, 60, 100];
+      if (milestones.includes(m.currentStreak)) {
+        context += `- 🎯 MILESTONE: User just hit ${m.currentStreak}-day streak!\n`;
+      }
+      
+      // Add warning flags
+      if (m.discipline < 50) {
+        context += `- ⚠️ WARNING: Discipline below 50% - system weakening\n`;
+      }
+      if (m.systemStrength < 50) {
+        context += `- ⚠️ WARNING: System strength critical - intervention needed\n`;
+      }
+      
+      context += `\n`;
+    }
+
     // Behavioral patterns
     if (consciousness.patterns) {
       if (consciousness.patterns.drift_windows?.length > 0) {
@@ -261,6 +296,83 @@ Return ONLY valid JSON:
 
     context += `\nUse this data to provide personalized, specific guidance. Reference their actual habits and patterns.`;
     return context;
+  }
+
+  /**
+   * 📊 Calculate metrics for context
+   * Simple version - matches frontend calculation logic
+   */
+  private async calculateMetricsForContext(userId: string) {
+    try {
+      const now = new Date();
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+      // Get habits and events
+      const habits = await prisma.habit.findMany({
+        where: { userId },
+        select: { id: true, streak: true },
+      });
+
+      const events = await prisma.event.findMany({
+        where: {
+          userId,
+          type: "habit_tick",
+          ts: { gte: sevenDaysAgo },
+        },
+      });
+
+      if (habits.length === 0) {
+        return {
+          discipline: 0,
+          disciplineBreakdown: { today: 0, weekly: 0 },
+          systemStrength: 0,
+          currentStreak: 0,
+          longestStreak: 0,
+        };
+      }
+
+      // Calculate today's completion
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+      const todayCompletions = events.filter(e => e.ts >= todayStart && e.ts < todayEnd);
+      const todayCompletion = (todayCompletions.length / habits.length) * 100;
+
+      // Calculate weekly completion
+      const weeklyCompletion = (events.length / (habits.length * 7)) * 100;
+
+      // Discipline (weighted)
+      const discipline = Math.round(todayCompletion * 0.6 + weeklyCompletion * 0.4);
+
+      // Streaks
+      const currentStreak = Math.max(...habits.map(h => h.streak || 0), 0);
+      const longestStreak = currentStreak; // Simplified
+
+      // System strength
+      const streakScore = Math.min((currentStreak / 20) * 100, 100);
+      const systemStrength = Math.round(
+        streakScore * 0.4 + weeklyCompletion * 0.6
+      );
+
+      return {
+        discipline,
+        disciplineBreakdown: {
+          today: Math.round(todayCompletion),
+          weekly: Math.round(weeklyCompletion),
+        },
+        systemStrength,
+        currentStreak,
+        longestStreak,
+      };
+    } catch (err) {
+      console.warn("Failed to calculate metrics for context:", err);
+      return {
+        discipline: 0,
+        disciplineBreakdown: { today: 0, weekly: 0 },
+        systemStrength: 0,
+        currentStreak: 0,
+        longestStreak: 0,
+      };
+    }
   }
 
   /**

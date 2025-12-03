@@ -315,6 +315,22 @@ class ApiClient {
     }
   }
 
+  // 📊 Get OS Metrics (discipline, streak, system strength)
+  static Future<ApiResponse<Map<String, dynamic>>> getOSMetrics() async {
+    try {
+      final response = await _get('/api/v1/user/metrics');
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return ApiResponse.success(data);
+      } else {
+        return ApiResponse.error('Failed to fetch metrics: ${response.statusCode}');
+      }
+    } catch (e) {
+      return ApiResponse.error('Network error: $e');
+    }
+  }
+
   // Helper method to update base URL after Railway deployment
   static void updateBaseUrl(String newBaseUrl) {
     // This would require making _baseUrl non-final and adding a setter

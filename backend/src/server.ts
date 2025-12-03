@@ -20,6 +20,7 @@ import { futureYouChatController } from "./controllers/future-you-chat.controlle
 import { whatIfChatController } from "./controllers/what-if-chat.controller";
 import { futureYouChatControllerV2 } from "./controllers/future-you-v2.controller";
 import { reflectionsController } from "./controllers/reflections.controller";
+import { metricsController } from "./controllers/metrics.controller";
 import { futureYouRouter } from "./modules/futureyou/router";
 import { lifeTaskRouter } from "./modules/lifetask/router";
 
@@ -132,6 +133,11 @@ const buildServer = () => {
     protectedRoutes.register(insightsController); // Pattern analysis & insights
     protectedRoutes.register(whatIfController); // Purpose-aligned goals
     protectedRoutes.register(reflectionsController); // User reflection capture (NEW)
+    
+    // OS Metrics endpoint
+    protectedRoutes.register(async (instance) => {
+      await metricsController(instance);
+    }, { prefix: "/api/v1/user" });
     
     // V1 Chat (structured discovery + simple coach)
     protectedRoutes.register(futureYouChatController); // Future-You freeform chat (7 lenses)

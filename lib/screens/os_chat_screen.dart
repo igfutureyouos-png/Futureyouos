@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -7,8 +8,11 @@ import '../design/tokens.dart';
 import '../services/api_client.dart';
 import '../services/messages_service.dart';
 import '../services/premium_service.dart';
+import '../services/os_metrics_service.dart';
 import '../models/coach_message.dart' as model;
 import '../widgets/paywall_dialog.dart';
+import '../widgets/os_status_hud.dart';
+import '../widgets/os_glowing_orb.dart';
 
 /// Unified message type for timeline (OS messages + chat)
 class TimelineMessage {
@@ -45,18 +49,46 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
   bool _isLoading = false;
   bool _initialized = false;
   String _currentPhase = 'Observer'; // Default phase
+  
+  // 🎯 OS METRICS
+  OSMetrics? _metrics;
+  Timer? _metricsTimer;
 
   @override
   void initState() {
     super.initState();
     _initializeMessages();
+    _loadMetrics(); // Initial metrics load
+    _startMetricsPolling(); // Start 60s polling
   }
 
   @override
   void dispose() {
     _inputController.dispose();
     _scrollController.dispose();
+    _metricsTimer?.cancel();
     super.dispose();
+  }
+  
+  /// 📊 Load OS metrics
+  Future<void> _loadMetrics() async {
+    try {
+      final metrics = OSMetricsService.calculateMetrics();
+      if (mounted) {
+        setState(() {
+          _metrics = metrics;
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to load metrics: $e');
+    }
+  }
+  
+  /// ⏱️ Start metrics polling (every 60 seconds)
+  void _startMetricsPolling() {
+    _metricsTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
+      _loadMetrics();
+    });
   }
 
   Future<void> _initializeMessages() async {
@@ -168,6 +200,9 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
         });
 
         _scrollToBottom();
+        
+        // Refresh metrics after conversation (AI may reference new data)
+        _loadMetrics();
       } else {
         throw Exception(response.error ?? 'Unknown error');
       }
@@ -218,6 +253,29 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                     slivers: [
                       // Header
                       _buildHeader(),
+                      
+                      // 🎯 STATUS HUD
+                      if (_metrics != null)
+                        SliverToBoxAdapter(
+                          child: OSStatusHUD(
+                            metrics: _metrics!,
+                            animate: true,
+                          ),
+                        ),
+                      
+                      // 🌟 GLOWING ORB
+                      if (_metrics != null)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                            child: OSGlowingOrb(
+                              metrics: _metrics!,
+                              size: 120,
+                            ),
+                          ).animate()
+                            .fadeIn(duration: 600.ms, delay: 200.ms)
+                            .scale(begin: const Offset(0.8, 0.8), duration: 600.ms, delay: 200.ms),
+                        ),
                       
                       // Timeline messages
                       SliverPadding(

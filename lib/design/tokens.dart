@@ -35,6 +35,10 @@ class AppColors {
   static const Color purple = Color(0xFF8B5CF6);
   static const Color rose = Color(0xFFF43F5E);
   
+  // OS Metrics colors
+  static const Color amber = Color(0xFFFBBF24); // Yellow/amber for mid-range metrics
+  static const Color fire = Color(0xFFFF6B35); // Fire orange for streak
+  
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [emerald, cyan],
