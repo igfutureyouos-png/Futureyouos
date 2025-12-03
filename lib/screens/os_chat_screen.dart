@@ -353,10 +353,14 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                       SliverToBoxAdapter(
                         child: OSStatusHUD(
                           metrics: _metrics ?? OSMetrics(
-                            disciplinePercentage: 0.0,
+                            discipline: 0.0,
+                            disciplineToday: 0.0,
+                            disciplineWeekly: 0.0,
                             currentStreak: 0,
                             longestStreak: 0,
                             systemStrength: 0.0,
+                            activeHabits: 0,
+                            completionRateLast7Days: 0.0,
                           ),
                           animate: true,
                         ),
@@ -368,10 +372,14 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                           padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
                           child: OSGlowingOrb(
                             metrics: _metrics ?? OSMetrics(
-                              disciplinePercentage: 0.0,
+                              discipline: 0.0,
+                              disciplineToday: 0.0,
+                              disciplineWeekly: 0.0,
                               currentStreak: 0,
                               longestStreak: 0,
                               systemStrength: 0.0,
+                              activeHabits: 0,
+                              completionRateLast7Days: 0.0,
                             ),
                             size: 120,
                           ),

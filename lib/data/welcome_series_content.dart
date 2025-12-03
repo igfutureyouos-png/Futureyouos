@@ -344,8 +344,8 @@ whenever you are ready.''',
   ),
 ];
 
-WelcomeDayContent? getWelcomeDay(int day) {
+WelcomeDay? getWelcomeDay(int day) {
   if (day < 1 || day > 7) return null;
-  return WELCOME_SERIES[day - 1];
+  return welcomeSeries[day - 1];
 }
 
