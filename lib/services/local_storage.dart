@@ -118,6 +118,18 @@ class LocalStorageService {
     }
   }
 
+  // ------------------- VOICE SELECTION (TTS) -------------------
+  
+  /// Set selected TTS voice
+  static Future<void> setSelectedVoice(String voiceId) async {
+    await _settingsBox?.put('selected_voice', voiceId);
+  }
+  
+  /// Get selected TTS voice (defaults to "marcus")
+  static String getSelectedVoice() {
+    return _settingsBox?.get('selected_voice', defaultValue: 'marcus') as String? ?? 'marcus';
+  }
+
   // -------------------  STREAK & ANALYTICS (date-aware)  -------------------
 
   static int calculateCurrentStreak() {

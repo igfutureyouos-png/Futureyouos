@@ -9,6 +9,7 @@ import '../services/api_client.dart';
 import '../services/messages_service.dart';
 import '../services/premium_service.dart';
 import '../services/os_metrics_service.dart';
+import '../services/speech_service.dart';
 import '../models/coach_message.dart' as model;
 import '../widgets/paywall_dialog.dart';
 import '../widgets/os_status_hud.dart';
@@ -53,6 +54,10 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
   // 🎯 OS METRICS
   OSMetrics? _metrics;
   Timer? _metricsTimer;
+  
+  // 🎤 SPEECH-TO-TEXT
+  bool _isRecording = false;
+  bool _isTranscribing = false;
 
   @override
   void initState() {
@@ -89,6 +94,84 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
     _metricsTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
       _loadMetrics();
     });
+  }
+  
+  /// 🎤 Toggle recording (start/stop)
+  Future<void> _toggleRecording() async {
+    if (_isRecording) {
+      // Stop recording and transcribe
+      await _stopAndTranscribe();
+    } else {
+      // Start recording
+      await _startRecording();
+    }
+  }
+  
+  /// 🎤 Start recording
+  Future<void> _startRecording() async {
+    final success = await SpeechService.startRecording();
+    if (success && mounted) {
+      setState(() {
+        _isRecording = true;
+      });
+      debugPrint('🎤 Recording started');
+    }
+  }
+  
+  /// 🎤 Stop recording and transcribe
+  Future<void> _stopAndTranscribe() async {
+    setState(() {
+      _isRecording = false;
+      _isTranscribing = true;
+    });
+    
+    try {
+      final audioFile = await SpeechService.stopRecording();
+      
+      if (audioFile != null) {
+        debugPrint('📤 Transcribing audio...');
+        final transcription = await SpeechService.transcribeAudio(audioFile);
+        
+        if (transcription != null && transcription.isNotEmpty && mounted) {
+          setState(() {
+            _inputController.text = transcription;
+            _isTranscribing = false;
+          });
+          debugPrint('✅ Transcription: $transcription');
+        } else {
+          if (mounted) {
+            setState(() {
+              _isTranscribing = false;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Could not transcribe audio. Please try again.'),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _isTranscribing = false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Transcription error: $e');
+      if (mounted) {
+        setState(() {
+          _isTranscribing = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Transcription failed: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _initializeMessages() async {
@@ -382,7 +465,65 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.md),
+                        const SizedBox(width: AppSpacing.sm),
+                        
+                        // 🎤 MIC BUTTON (Speech-to-Text)
+                        if (_isTranscribing)
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: AppColors.glassBackground,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppColors.emerald.withOpacity(0.2),
+                              ),
+                            ),
+                            child: Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.emerald),
+                                ),
+                              ),
+                            ),
+                          )
+                        else
+                          GestureDetector(
+                            onTap: _toggleRecording,
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: _isRecording 
+                                  ? AppColors.error.withOpacity(0.2)
+                                  : AppColors.glassBackground,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: _isRecording 
+                                    ? AppColors.error 
+                                    : AppColors.emerald.withOpacity(0.2),
+                                  width: _isRecording ? 2 : 1,
+                                ),
+                              ),
+                              child: Icon(
+                                LucideIcons.mic,
+                                color: _isRecording ? AppColors.error : AppColors.textTertiary,
+                                size: 20,
+                              ),
+                            ).animate(
+                              onPlay: (controller) => controller.repeat(),
+                            ).then(delay: _isRecording ? 0.ms : 10000.ms).shimmer(
+                              duration: _isRecording ? 1000.ms : 0.ms,
+                              color: AppColors.error.withOpacity(0.5),
+                            ),
+                          ),
+                        
+                        const SizedBox(width: AppSpacing.sm),
+                        
+                        // 📤 SEND BUTTON
                         GestureDetector(
                           onTap: _sendMessage,
                           child: Container(

@@ -21,6 +21,7 @@ import { whatIfChatController } from "./controllers/what-if-chat.controller";
 import { futureYouChatControllerV2 } from "./controllers/future-you-v2.controller";
 import { reflectionsController } from "./controllers/reflections.controller";
 import { metricsController } from "./controllers/metrics.controller";
+import { speechController } from "./controllers/speech.controller";
 import { futureYouRouter } from "./modules/futureyou/router";
 import { lifeTaskRouter } from "./modules/lifetask/router";
 
@@ -52,6 +53,13 @@ const buildServer = () => {
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-user-id", "idempotency-key"],
     credentials: true,
+  });
+
+  // Multipart support for file uploads (speech-to-text)
+  fastify.register(require('@fastify/multipart'), {
+    limits: {
+      fileSize: 25 * 1024 * 1024, // 25MB max file size
+    },
   });
 
   fastify.register(swagger, {
@@ -138,6 +146,11 @@ const buildServer = () => {
     protectedRoutes.register(async (instance) => {
       await metricsController(instance);
     }, { prefix: "/api/v1/user" });
+    
+    // Speech-to-text endpoint
+    protectedRoutes.register(async (instance) => {
+      await speechController(instance);
+    }, { prefix: "/api/v1/speech" });
     
     // V1 Chat (structured discovery + simple coach)
     protectedRoutes.register(futureYouChatController); // Future-You freeform chat (7 lenses)

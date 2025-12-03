@@ -14,12 +14,21 @@ const VOICES: Record<string, string | undefined> = {
   strict: process.env.ELEVENLABS_VOICE_STRICT,
   balanced: process.env.ELEVENLABS_VOICE_BALANCED,
   light: process.env.ELEVENLABS_VOICE_LIGHT,
-  marcus: process.env.ELEVENLABS_VOICE_MARCUS,
+  marcus: process.env.ELEVENLABS_VOICE_MARCUS || process.env.TTS_VOICE_MALE_1,
   drill: process.env.ELEVENLABS_VOICE_DRILL,
   confucius: process.env.ELEVENLABS_VOICE_CONFUCIUS,
   lincoln: process.env.ELEVENLABS_VOICE_LINCOLN,
   buddha: process.env.ELEVENLABS_VOICE_BUDDHA,
+  // New TTS voices for OS
+  atlas: process.env.TTS_VOICE_MALE_2,
+  orion: process.env.TTS_VOICE_MALE_3,
+  nova: process.env.TTS_VOICE_FEMALE_1,
+  luna: process.env.TTS_VOICE_FEMALE_2,
+  aurora: process.env.TTS_VOICE_FEMALE_3,
 };
+
+// Default voice if none specified
+const DEFAULT_VOICE = "marcus";
 
 const S3_ENDPOINT = process.env.S3_ENDPOINT || "";
 const S3_BUCKET = process.env.S3_BUCKET || "";
@@ -40,9 +49,9 @@ export class VoiceService {
   /**
    * Main: get TTS audio URL for a mentor/voice + text, with real caching.
    */
-  async speak(userId: string, text: string, voiceKey: string) {
+  async speak(userId: string, text: string, voiceKey: string = DEFAULT_VOICE) {
     if (!ELEVEN_API_KEY) throw new Error("ELEVENLABS_API_KEY missing");
-    const voiceId = VOICES[voiceKey] || VOICES["balanced"];
+    const voiceId = VOICES[voiceKey] || VOICES[DEFAULT_VOICE] || VOICES["balanced"];
     if (!voiceId) throw new Error(`Voice not configured for key "${voiceKey}"`);
 
     const cacheKey = this.hash(text + "|" + voiceId);
@@ -113,9 +122,30 @@ export class VoiceService {
   /**
    * Alias for speak() that returns just the URL string (backward compatibility)
    */
-  async ttsToUrl(userId: string, text: string, voiceKey: string): Promise<string> {
+  async ttsToUrl(userId: string, text: string, voiceKey: string = DEFAULT_VOICE): Promise<string> {
     const result = await this.speak(userId, text, voiceKey);
     return result.url;
+  }
+
+  /**
+   * Get list of available voices
+   */
+  getAvailableVoices() {
+    return [
+      { id: "marcus", name: "Marcus", gender: "male" },
+      { id: "atlas", name: "Atlas", gender: "male" },
+      { id: "orion", name: "Orion", gender: "male" },
+      { id: "nova", name: "Nova", gender: "female" },
+      { id: "luna", name: "Luna", gender: "female" },
+      { id: "aurora", name: "Aurora", gender: "female" },
+    ];
+  }
+
+  /**
+   * Get default voice
+   */
+  getDefaultVoice() {
+    return DEFAULT_VOICE;
   }
 
   private hash(s: string) {

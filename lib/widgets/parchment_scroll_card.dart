@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'dart:math' as math;
 import '../models/coach_message.dart';
 import '../services/messages_service.dart';
+import '../services/tts_playback_service.dart';
 import '../design/tokens.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -39,6 +40,10 @@ class _ParchmentScrollCardState extends State<ParchmentScrollCard>
   late Animation<double> _glowAnimation;
   late Animation<double> _entranceSlide;
   late Animation<double> _entranceFade;
+  
+  // 🔊 TTS state
+  bool _isPlaying = false;
+  bool _hasAutoPlayed = false;
 
   @override
   void initState() {
@@ -100,6 +105,62 @@ class _ParchmentScrollCardState extends State<ParchmentScrollCard>
     ));
 
     _entranceController.forward();
+    
+    // 🔊 Auto-play TTS when scroll appears (if audio available)
+    _autoPlayTTSIfNeeded();
+  }
+  
+  /// 🔊 Auto-play TTS on first appearance
+  Future<void> _autoPlayTTSIfNeeded() async {
+    // Wait for entrance animation to complete
+    await Future.delayed(const Duration(milliseconds: 1200));
+    
+    if (!mounted) return;
+    
+    // Check if any message has audio URL
+    for (final message in widget.messages) {
+      final audioUrl = message.audioUrl;
+      if (audioUrl != null && audioUrl.isNotEmpty) {
+        // Check if already auto-played
+        final alreadyPlayed = await TTSPlaybackService.hasAutoPlayed(message.id);
+        if (!alreadyPlayed && mounted) {
+          setState(() {
+            _hasAutoPlayed = true;
+            _isPlaying = true;
+          });
+          
+          await TTSPlaybackService.autoPlayIfNeeded(message.id, audioUrl);
+          
+          if (mounted) {
+            setState(() {
+              _isPlaying = false;
+            });
+          }
+          break; // Only auto-play first message with audio
+        }
+      }
+    }
+  }
+  
+  /// 🔊 Play/replay TTS
+  Future<void> _playTTS() async {
+    for (final message in widget.messages) {
+      final audioUrl = message.audioUrl;
+      if (audioUrl != null && audioUrl.isNotEmpty) {
+        setState(() {
+          _isPlaying = true;
+        });
+        
+        await TTSPlaybackService.playAudio(audioUrl);
+        
+        if (mounted) {
+          setState(() {
+            _isPlaying = false;
+          });
+        }
+        break; // Play first message with audio
+      }
+    }
   }
 
   @override
@@ -511,19 +572,44 @@ class _ParchmentScrollCardState extends State<ParchmentScrollCard>
   }
 
   Widget _buildActions() {
+    // Check if any message has audio
+    final hasAudio = widget.messages.any((m) => m.audioUrl != null && m.audioUrl!.isNotEmpty);
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: Row(
         children: [
+          // 🔊 TTS Play/Replay Button (if audio available)
+          if (hasAudio) ...[
+            _buildActionButton(
+              label: '',
+              icon: _isPlaying ? LucideIcons.volume2 : LucideIcons.volume1,
+              onPressed: _playTTS,
+              isPrimary: false,
+            ),
+            const SizedBox(width: AppSpacing.md),
+          ],
+          
+          // OS Chat Button (Primary)
           Expanded(
             child: _buildActionButton(
-              label: 'View Reflections',
-              icon: LucideIcons.bookOpen,
-              onPressed: _handleDismiss,
+              label: 'OS Chat',
+              icon: LucideIcons.messageCircle,
+              onPressed: () {
+                // Navigate to OS Chat tab (index 2 in main screen)
+                Navigator.of(context).popUntil((route) => route.isFirst);
+                // Trigger tab change to OS Chat (assuming it's index 2)
+                // This will be handled by the navigation callback
+                if (widget.onNavigateToReflections != null) {
+                  widget.onNavigateToReflections!();
+                }
+              },
               isPrimary: true,
             ),
           ),
           const SizedBox(width: AppSpacing.md),
+          
+          // Dismiss Button
           _buildActionButton(
             label: '',
             icon: LucideIcons.x,

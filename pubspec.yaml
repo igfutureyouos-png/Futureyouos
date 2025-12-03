@@ -47,6 +47,10 @@ dependencies:
   flutter_tts: ^4.2.3
   lottie: ^3.3.2
   share_plus: ^12.0.1
+  
+  # Speech & Audio Recording
+  record: ^5.0.0
+  path_provider: ^2.1.0
 
   # UI & Icons
   cupertino_icons: ^1.0.6

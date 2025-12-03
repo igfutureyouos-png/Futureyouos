@@ -3,6 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'dart:ui';
 import '../models/coach_message.dart';
 import '../services/messages_service.dart';
+import '../services/tts_playback_service.dart';
 import '../design/tokens.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -34,6 +35,10 @@ class _NudgeCardState extends State<NudgeCard>
   late Animation<double> _glowAnimation;
   late Animation<double> _entranceSlide;
   late Animation<double> _entranceFade;
+  
+  // 🔊 TTS state
+  bool _isPlaying = false;
+  bool _hasAutoPlayed = false;
 
   @override
   void initState() {
@@ -76,6 +81,54 @@ class _NudgeCardState extends State<NudgeCard>
     ));
 
     _entranceController.forward();
+    
+    // 🔊 Auto-play TTS when nudge appears
+    _autoPlayTTSIfNeeded();
+  }
+  
+  /// 🔊 Auto-play TTS on first appearance
+  Future<void> _autoPlayTTSIfNeeded() async {
+    // Wait for entrance animation
+    await Future.delayed(const Duration(milliseconds: 1000));
+    
+    if (!mounted) return;
+    
+    final audioUrl = widget.message.audioUrl;
+    if (audioUrl != null && audioUrl.isNotEmpty) {
+      final alreadyPlayed = await TTSPlaybackService.hasAutoPlayed(widget.message.id);
+      if (!alreadyPlayed && mounted) {
+        setState(() {
+          _hasAutoPlayed = true;
+          _isPlaying = true;
+        });
+        
+        await TTSPlaybackService.autoPlayIfNeeded(widget.message.id, audioUrl);
+        
+        if (mounted) {
+          setState(() {
+            _isPlaying = false;
+          });
+        }
+      }
+    }
+  }
+  
+  /// 🔊 Play/replay TTS
+  Future<void> _playTTS() async {
+    final audioUrl = widget.message.audioUrl;
+    if (audioUrl != null && audioUrl.isNotEmpty) {
+      setState(() {
+        _isPlaying = true;
+      });
+      
+      await TTSPlaybackService.playAudio(audioUrl);
+      
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+        });
+      }
+    }
   }
 
   @override
@@ -371,23 +424,45 @@ class _NudgeCardState extends State<NudgeCard>
   }
 
   Widget _buildActions() {
+    final hasAudio = widget.message.audioUrl != null && widget.message.audioUrl!.isNotEmpty;
+    
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.xl),
       child: Row(
         children: [
+          // 🔊 TTS Play/Replay Button (if audio available)
+          if (hasAudio) ...[
+            _ActionButton(
+              label: '',
+              icon: _isPlaying ? LucideIcons.volume2 : LucideIcons.volume1,
+              onPressed: _playTTS,
+              gradient: _phaseTheme.gradient,
+              isPrimary: false,
+            ),
+            const SizedBox(width: AppSpacing.md),
+          ],
+          
+          // OS Chat Button (Primary)
           Expanded(
             child: _ActionButton(
-              label: 'View Reflections',
-              icon: LucideIcons.bookOpen,
-              onPressed: _handleDismiss,
+              label: 'OS Chat',
+              icon: LucideIcons.messageCircle,
+              onPressed: () {
+                // Navigate to OS Chat tab
+                if (widget.onNavigateToReflections != null) {
+                  widget.onNavigateToReflections!();
+                }
+              },
               gradient: _phaseTheme.gradient,
               isPrimary: true,
             ),
           ),
           const SizedBox(width: AppSpacing.md),
+          
+          // Dismiss Button
           _ActionButton(
-            label: 'Dismiss',
-            icon: LucideIcons.check,
+            label: '',
+            icon: LucideIcons.x,
             onPressed: () async {
               await messagesService.markAsRead(widget.message.id);
               widget.onDismiss();

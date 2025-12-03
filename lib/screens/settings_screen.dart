@@ -25,6 +25,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   
   bool _notifDaily = true;
   bool _notifChat = false;
+  String _selectedVoice = 'marcus';
+  
+  // Available voices
+  final List<Map<String, String>> _voices = [
+    {'id': 'marcus', 'name': 'Marcus', 'gender': 'Male'},
+    {'id': 'atlas', 'name': 'Atlas', 'gender': 'Male'},
+    {'id': 'orion', 'name': 'Orion', 'gender': 'Male'},
+    {'id': 'nova', 'name': 'Nova', 'gender': 'Female'},
+    {'id': 'luna', 'name': 'Luna', 'gender': 'Female'},
+    {'id': 'aurora', 'name': 'Aurora', 'gender': 'Female'},
+  ];
   
   @override
   void initState() {
@@ -44,6 +55,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _emailController.text = LocalStorageService.getSetting<String>('email', defaultValue: 'you@example.com') ?? '';
     _notifDaily = LocalStorageService.getSetting<bool>('notifDaily', defaultValue: true) ?? true;
     _notifChat = LocalStorageService.getSetting<bool>('notifChat', defaultValue: false) ?? false;
+    _selectedVoice = LocalStorageService.getSelectedVoice();
   }
   
   Future<void> _saveSettings() async {
@@ -51,6 +63,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     await LocalStorageService.saveSetting('email', _emailController.text);
     await LocalStorageService.saveSetting('notifDaily', _notifDaily);
     await LocalStorageService.saveSetting('notifChat', _notifChat);
+    await LocalStorageService.setSelectedVoice(_selectedVoice);
     
     _showSuccessSnackBar('Settings saved successfully');
   }
@@ -302,6 +315,110 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _notifChat,
                   (value) => setState(() => _notifChat = value),
                 ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: AppSpacing.lg),
+          
+          // Voice Settings section
+          GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(LucideIcons.mic, size: 20, color: AppColors.emerald),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      'Voice Settings',
+                      style: AppTextStyles.h3.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Choose the voice for briefs, nudges, and debriefs',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                
+                // Voice options
+                ..._voices.map((voice) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedVoice = voice['id']!;
+                      });
+                      _saveSettings();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: _selectedVoice == voice['id']
+                            ? AppColors.emerald.withOpacity(0.1)
+                            : AppColors.glassBackground,
+                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                        border: Border.all(
+                          color: _selectedVoice == voice['id']
+                              ? AppColors.emerald
+                              : AppColors.glassBorder,
+                          width: _selectedVoice == voice['id'] ? 2 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _selectedVoice == voice['id']
+                                ? Icons.radio_button_checked
+                                : Icons.radio_button_unchecked,
+                            color: _selectedVoice == voice['id']
+                                ? AppColors.emerald
+                                : AppColors.textTertiary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  voice['name']!,
+                                  style: AppTextStyles.body.copyWith(
+                                    fontWeight: _selectedVoice == voice['id']
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                    color: _selectedVoice == voice['id']
+                                        ? AppColors.emerald
+                                        : AppColors.textPrimary,
+                                  ),
+                                ),
+                                Text(
+                                  voice['gender']!,
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: AppColors.textTertiary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            LucideIcons.volume2,
+                            size: 18,
+                            color: _selectedVoice == voice['id']
+                                ? AppColors.emerald
+                                : AppColors.textTertiary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )).toList(),
               ],
             ),
           ),

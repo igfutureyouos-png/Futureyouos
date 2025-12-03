@@ -149,5 +149,10 @@ class CoachMessage extends HiveObject {
         return 'Awakening Journey';
     }
   }
+  
+  /// 🔊 Get TTS audio URL from meta if available
+  String? get audioUrl {
+    return meta?['audioUrl'] as String?;
+  }
 }
 

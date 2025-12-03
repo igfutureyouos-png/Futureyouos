@@ -263,6 +263,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       _selectedDate = date;
     });
   }
+  
+  /// Navigate to OS Chat tab (index 2 in main screen)
+  void _navigateToOSChat() {
+    // Find the MainScreen ancestor and switch to OS Chat tab
+    // This requires the MainScreen to expose a way to change tabs
+    // For now, we'll pop to root and use a global key or state management
+    
+    // Simple approach: Pop to root (main screen) and it should be on OS Chat
+    // The main screen state needs to be accessible to change the tab
+    // For MVP, we'll just navigate to the OS Chat screen directly
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const OSChatScreen()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -345,10 +360,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                 messages: scrollMessages,
                 phase: 'observer', // TODO: Get from user's actual phase
                 onNavigateToReflections: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ReflectionsScreen()),
-                  );
+                  // Navigate to OS Chat tab (index 2)
+                  _navigateToOSChat();
                 },
                 onDismiss: () {
                   // Refresh home screen to hide dismissed messages
@@ -363,10 +376,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                 phase: 'observer', // TODO: Get from user's actual phase
                 onDismiss: () => setState(() {}),
                 onNavigateToReflections: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ReflectionsScreen()),
-                  );
+                  // Navigate to OS Chat tab (index 2)
+                  _navigateToOSChat();
                 },
               ),
             

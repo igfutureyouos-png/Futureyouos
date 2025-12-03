@@ -24,35 +24,85 @@ class CelebritySystem {
   });
 }
 
-// 🔥 PLACEHOLDER SYSTEMS (For testing only)
+// 🔥 Celebrity Habit Systems
 final List<CelebritySystem> celebritySystems = [
+  // ⭐ KHABIB — "Dagestan Discipline Tyrant System"
   CelebritySystem(
-    name: 'Example Person 1',
-    title: 'Test System',
-    subtitle: 'PLACEHOLDER FOR TESTING',
+    name: 'Khabib Nurmagomedov',
+    title: 'Dagestan Discipline Tyrant System',
+    subtitle: 'UNDEFEATED IS A SYSTEM',
     tier: '🔥 EXTREME INTENSITY',
     habits: [
-      'Placeholder habit 1',
-      'Placeholder habit 2',
-      'Placeholder habit 3',
-      'Placeholder habit 4',
+      '🌅 Dawn wake (no snooze)',
+      '🏃 Roadwork / conditioning',
+      '🎯 Skill work (any craft)',
+      '🥗 Clean diet',
+      '🚫 No nightlife / no distraction',
+      '💼 Work block',
+      '🕌 Family/Faith block',
+      '🪞 Honor reflection',
     ],
-    whyViral: 'This is placeholder content for development purposes',
-    emoji: '⚔️',
-    gradientColors: [239, 68, 68, 185, 28, 28],
+    whyViral: 'Undefeated is a SYSTEM.',
+    emoji: '🦅',
+    gradientColors: [185, 28, 28, 127, 29, 29], // Dark red fighter aesthetic
   ),
+
+  // ⭐ STEVE HARVEY — "High Standards System"
   CelebritySystem(
-    name: 'Example Person 2',
-    title: 'Demo System',
-    subtitle: 'FOR DEVELOPMENT ONLY',
+    name: 'Steve Harvey',
+    title: 'High Standards System',
+    subtitle: 'SPIRITUAL DISCIPLINE',
+    tier: '⚡ MODERATE INTENSITY',
+    habits: [
+      '⏰ Early wake (no 8-hour sleep excuses)',
+      '🙏 Prayer / intention',
+      '📖 Read 10–20 mins',
+      '💼 Work block',
+      '✨ Grooming (look sharp)',
+      '🤝 Help someone',
+      '📝 Gratitude list',
+    ],
+    whyViral: 'Your blessings rise when your standards rise.',
+    emoji: '👔',
+    gradientColors: [234, 179, 8, 202, 138, 4], // Gold success aesthetic
+  ),
+
+  // ⭐ ELIUD KIPCHOGE — "Monastic Discipline Runner System"
+  CelebritySystem(
+    name: 'Eliud Kipchoge',
+    title: 'Monastic Discipline Runner System',
+    subtitle: 'STEADY LONG-DISTANCE ENERGY',
     tier: '🌟 HIGH INTENSITY',
     habits: [
-      'Test habit 1',
-      'Test habit 2',
-      'Test habit 3',
+      '🤫 Silence morning',
+      '🏃 Daily run (distance or time)',
+      '🥬 Eat simple, clean foods',
+      '📚 Read something',
+      '🙏 Gratitude moment',
+      '🚶 Evening walk',
+      '😴 Early sleep',
     ],
-    whyViral: 'Demo content - not for production',
-    emoji: '💪',
-    gradientColors: [34, 197, 94, 22, 163, 74],
+    whyViral: "It's not talent — it's SYSTEM.",
+    emoji: '🏃',
+    gradientColors: [34, 197, 94, 22, 101, 52], // Green earth/endurance aesthetic
+  ),
+
+  // ⭐ MUHAMMAD ALI — "Champion's Rhythm System"
+  CelebritySystem(
+    name: 'Muhammad Ali',
+    title: "Champion's Rhythm System",
+    subtitle: 'CHARISMA + DISCIPLINE + AURA',
+    tier: '💫 ACCESSIBLE INTENSITY',
+    habits: [
+      '🌅 Morning movement',
+      '💬 Affirmations',
+      '🥊 Practice your craft',
+      '🍽️ Eat disciplined',
+      '🙇 Act humble',
+      '🌙 Night reset',
+    ],
+    whyViral: "Don't count the days. Make the SYSTEM count.",
+    emoji: '🥊',
+    gradientColors: [234, 179, 8, 30, 30, 30], // Gold/Black champion aesthetic
   ),
 ];
