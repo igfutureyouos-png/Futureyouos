@@ -9,6 +9,7 @@ import '../widgets/date_strip.dart';
 import '../widgets/scrollable_header.dart';
 import '../screens/settings_screen.dart';
 import '../screens/reflections_screen.dart';
+import '../screens/os_chat_screen.dart';
 import '../widgets/parchment_scroll_card.dart';
 import '../widgets/nudge_card.dart';
 import '../widgets/morning_brief_modal.dart';
