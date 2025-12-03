@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { whatIfChatService } from "../services/what-if-chat.service";
+import { premiumService } from "../services/premium.service";
 
 function getUserIdOr401(req: any) {
   // 🔥 SIMPLE AUTH: Accept user ID from multiple sources
@@ -33,6 +34,15 @@ export async function whatIfChatController(fastify: FastifyInstance) {
     try {
       const userId = getUserIdOr401(req);
       const { message, preset } = req.body;
+
+      // 🔒 PAYWALL: Check premium status
+      const isPremium = await premiumService.isPremium(userId);
+      if (!isPremium) {
+        return reply.code(402).send({ 
+          error: "Premium subscription required",
+          code: "PREMIUM_REQUIRED"
+        });
+      }
 
       if (!message || typeof message !== "string") {
         return reply.code(400).send({ error: "Message required" });

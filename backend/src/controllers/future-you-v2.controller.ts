@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { futureYouV2Service } from "../services/future-you-v2.service";
+import { premiumService } from "../services/premium.service";
 
 function getUserIdOr401(req: any) {
   const uid = req?.user?.id || req.headers["x-user-id"];
@@ -13,6 +14,15 @@ export async function futureYouChatControllerV2(fastify: FastifyInstance) {
     try {
       const userId = getUserIdOr401(req);
       const { message } = req.body || {};
+      
+      // 🔒 PAYWALL: Check premium status
+      const isPremium = await premiumService.isPremium(userId);
+      if (!isPremium) {
+        return reply.code(402).send({ 
+          error: "Premium subscription required",
+          code: "PREMIUM_REQUIRED"
+        });
+      }
       
       if (!message || typeof message !== "string") {
         return reply.code(400).send({ error: "Message required" });

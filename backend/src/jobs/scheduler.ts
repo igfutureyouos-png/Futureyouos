@@ -9,6 +9,7 @@ import { coachMessageService } from "../services/coach-message.service";
 import { notificationsService } from "../services/notifications.service";
 import { voiceService } from "../services/voice.service";
 import { nudgesService } from "../services/nudges.service";
+import { premiumService } from "../services/premium.service";
 
 const QUEUE = "scheduler";
 export const schedulerQueue = new Queue(QUEUE, { connection: redis });
@@ -181,6 +182,13 @@ async function ensureNudgeJobs() {
 }
 
 async function runDailyBrief(userId: string) {
+  // 🔒 PAYWALL: Only send briefs to premium users
+  const isPremium = await premiumService.isPremium(userId);
+  if (!isPremium) {
+    console.log(`⏭️ Skipping morning brief for free user: ${userId}`);
+    return { ok: true, skipped: true, reason: "not_premium" };
+  }
+
   const text =
     (await aiService.generateMorningBrief(userId).catch(() => null)) ||
     "Good morning.";
@@ -205,6 +213,13 @@ async function runDailyBrief(userId: string) {
 }
 
 async function runEveningDebrief(userId: string) {
+  // 🔒 PAYWALL: Only send debriefs to premium users
+  const isPremium = await premiumService.isPremium(userId);
+  if (!isPremium) {
+    console.log(`⏭️ Skipping evening debrief for free user: ${userId}`);
+    return { ok: true, skipped: true, reason: "not_premium" };
+  }
+
   const text =
     (await aiService.generateEveningDebrief(userId).catch(() => null)) ||
     "Evening debrief.";
@@ -229,6 +244,13 @@ async function runEveningDebrief(userId: string) {
 }
 
 async function runNudge(userId: string, trigger: string) {
+  // 🔒 PAYWALL: Only send nudges to premium users
+  const isPremium = await premiumService.isPremium(userId);
+  if (!isPremium) {
+    console.log(`⏭️ Skipping nudge for free user: ${userId}`);
+    return { ok: true, skipped: true, reason: "not_premium" };
+  }
+
   const timestamp = new Date().toISOString();
   console.log(`\n🔔 ================================`);
   console.log(`🔔 runNudge CALLED`);
