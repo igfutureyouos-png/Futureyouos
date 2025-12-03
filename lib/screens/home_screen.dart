@@ -217,7 +217,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     }
   }
 
-  void _showWelcomeDayModal(WelcomeDayContent dayContent) {
+  void _showWelcomeDayModal(WelcomeDay dayContent) {
     if (!mounted) return;
     
     try {
@@ -226,9 +226,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
         barrierDismissible: false,
         builder: (context) => WelcomeDayModal(
           day: dayContent.day,
-          moonPhase: dayContent.moonPhase,
+          moonPhase: '🌑', // Default moon phase
           title: dayContent.title,
-          content: dayContent.content,
+          content: dayContent.body,
           onContinue: () async {
             try {
               // Save welcome message to reflections tab
@@ -275,7 +275,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     // For MVP, we'll just navigate to the OS Chat screen directly
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const OSChatScreen()),
+      MaterialPageRoute(builder: (context) => OSChatScreen()),
     );
   }
 

@@ -13,11 +13,20 @@ class SpeechService {
   static String? _currentRecordingPath;
   static bool _isRecording = false;
 
+  /// Check if STT is supported on this platform
+  static bool get isSupported => !Platform.isLinux;
+
   /// Check if currently recording
   static bool get isRecording => _isRecording;
 
   /// Start audio recording
   static Future<bool> startRecording() async {
+    // Platform check
+    if (!isSupported) {
+      debugPrint('⚠️ STT not supported on this platform');
+      return false;
+    }
+    
     try {
       // Check and request permission
       if (await _recorder.hasPermission()) {

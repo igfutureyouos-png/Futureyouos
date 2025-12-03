@@ -123,7 +123,7 @@ class OSMetricsService {
     // Perfect consistency (0 variance) = 100, high variance (>30) = 0
     final consistencyScore = (100 - (stdDev / 30 * 100)).clamp(0, 100);
     
-    return consistencyScore;
+    return consistencyScore.toDouble();
   }
 
   /// 🎨 GET DISCIPLINE COLOR

@@ -109,6 +109,18 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
   
   /// 🎤 Start recording
   Future<void> _startRecording() async {
+    if (!SpeechService.isSupported) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Voice input not supported on this platform'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+      return;
+    }
+    
     final success = await SpeechService.startRecording();
     if (success && mounted) {
       setState(() {

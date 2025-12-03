@@ -140,7 +140,7 @@ class WelcomeSeriesLocal {
   }
 
   /// Get the content for today's day
-  WelcomeDayContent? getTodaysContent() {
+  WelcomeDay? getTodaysContent() {
     if (!shouldShowToday()) return null;
     final dayToShow = getDayToShowToday();
     if (dayToShow == null) return null;
@@ -150,23 +150,25 @@ class WelcomeSeriesLocal {
       _box.put('current_day', dayToShow);
     }
     
-    return getWelcomeDay(dayToShow);
+    // Get welcome day from content
+    if (dayToShow < 1 || dayToShow > welcomeSeries.length) return null;
+    return welcomeSeries[dayToShow - 1];
   }
 
   /// Convert welcome day to CoachMessage for storage in reflections
-  model.CoachMessage welcomeDayToMessage(WelcomeDayContent dayContent) {
+  model.CoachMessage welcomeDayToMessage(WelcomeDay dayContent) {
     return model.CoachMessage(
       id: 'welcome_day_${dayContent.day}',
       userId: 'test-user-felix', // Will be set by caller if different
       kind: model.MessageKind.awakening, // ✅ Use awakening kind for separate UI
-      title: '${dayContent.moonPhase} ${dayContent.title}',
-      body: dayContent.content,
+      title: dayContent.title,
+      body: dayContent.body,
       createdAt: DateTime.now(),
       isRead: false,
       meta: {
         'source': 'welcome_series',
         'day': dayContent.day,
-        'moonPhase': dayContent.moonPhase,
+        'audioUrl': dayContent.audioUrl,
       },
     );
   }
