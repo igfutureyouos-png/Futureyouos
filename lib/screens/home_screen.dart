@@ -133,8 +133,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       // Ensure messages service is initialized (init() is safe to call multiple times)
       await messagesService.init();
       
+      // Get real user ID instead of hardcoded test user
+      final userId = ApiClient.userId;
+      if (userId == null) {
+        debugPrint('❌ No authenticated user - cannot sync messages');
+        return;
+      }
+      
       // Add timeout to prevent hanging
-      await messagesService.syncMessages('test-user-felix').timeout(
+      await messagesService.syncMessages(userId).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
           debugPrint('⚠️ Message sync timed out after 10s - continuing anyway');

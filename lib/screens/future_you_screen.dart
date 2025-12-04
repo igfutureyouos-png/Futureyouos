@@ -4,8 +4,10 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../design/tokens.dart';
 import '../services/api_client.dart';
+import '../services/premium_service.dart';
 import '../services/habit_vault_service.dart';
 import '../models/vault_item.dart';
+import '../widgets/paywall_dialog.dart';
 import '../widgets/simple_header.dart';
 import '../lifetask/widgets/feature_card.dart';
 
@@ -114,6 +116,18 @@ class _FutureYouScreenState extends State<FutureYouScreen> {
     final message = _inputController.text.trim();
     if (message.isEmpty) return;
 
+    // ✅ PAYWALL: Check premium status before allowing Future You chat
+    final isPremium = await PremiumService.isPremium();
+    if (!isPremium) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => const PaywallDialog(feature: 'Future You Chat'),
+        );
+      }
+      return;
+    }
+
     final userMessage = ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       role: 'user',
@@ -163,12 +177,21 @@ class _FutureYouScreenState extends State<FutureYouScreen> {
           _isLoading = false;
         });
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.error ?? 'Chat failed'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        
+        // Check if it's a paywall error
+        if (result.error?.contains('Premium') == true || result.error?.contains('premium') == true) {
+          showDialog(
+            context: context,
+            builder: (context) => const PaywallDialog(feature: 'Future You Chat'),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.error ?? 'Chat failed'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
       }
     } catch (e) {
       setState(() {
@@ -176,12 +199,21 @@ class _FutureYouScreenState extends State<FutureYouScreen> {
       });
       debugPrint('❌ Future-You chat error: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to send message'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      
+      // Check if it's a premium error in the exception message
+      if (e.toString().toLowerCase().contains('premium')) {
+        showDialog(
+          context: context,
+          builder: (context) => const PaywallDialog(feature: 'Future You Chat'),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to send message'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     }
 
     _scrollToBottom();

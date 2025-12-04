@@ -8,6 +8,8 @@ import '../widgets/glass_button.dart';
 import '../widgets/scrollable_header.dart';
 import '../providers/habit_provider.dart';
 import '../services/api_client.dart';
+import '../services/premium_service.dart';
+import '../widgets/paywall_dialog.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -154,6 +156,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<void> _sendMessage() async {
     final message = _messageController.text.trim();
     if (message.isEmpty) return;
+
+    // ✅ PAYWALL: Check premium status before allowing AI chat
+    final isPremium = await PremiumService.isPremium();
+    if (!isPremium) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => const PaywallDialog(feature: 'AI Chat'),
+        );
+      }
+      return;
+    }
     
     // Add user message
     final userMessage = ChatMessage(
@@ -199,28 +213,45 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       } else {
         setState(() { _isLoading = false; });
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.error ?? 'Chat failed'),
-            action: SnackBarAction(
-              label: 'Retry',
-              onPressed: () => _sendMessage(),
+        
+        // Check if it's a paywall error
+        if (result.error?.contains('Premium') == true || result.error?.contains('premium') == true) {
+          showDialog(
+            context: context,
+            builder: (context) => const PaywallDialog(feature: 'AI Chat'),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.error ?? 'Chat failed'),
+              action: SnackBarAction(
+                label: 'Retry',
+                onPressed: () => _sendMessage(),
+              ),
             ),
-          ),
-        );
+          );
+        }
       }
     } catch (e) {
       setState(() { _isLoading = false; });
       debugPrint('❌ Chat error: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to send message'),
-          action: SnackBarAction(
-            label: 'Retry',
-            onPressed: () => _sendMessage(),
+      
+      // Check if it's a premium error in the exception message
+      if (e.toString().toLowerCase().contains('premium')) {
+        showDialog(
+          context: context,
+          builder: (context) => const PaywallDialog(feature: 'AI Chat'),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send message'),
+            action: SnackBarAction(
+              label: 'Retry',
+              onPressed: () => _sendMessage(),
+            ),
           ),
-        ),
       );
     }
     

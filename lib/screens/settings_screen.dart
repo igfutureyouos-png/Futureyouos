@@ -561,6 +561,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
           
+          const SizedBox(height: AppSpacing.lg),
+          
+          // 🔧 DEBUG: Premium Toggle (for testing paywall)
+          GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Debug Settings',
+                  style: AppTextStyles.h3.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'Toggle premium status to test paywall functionality',
+                  style: AppTextStyles.captionSmall.copyWith(
+                    color: AppColors.textQuaternary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                const PremiumDebugToggle(),
+              ],
+            ),
+          ),
+          
           // Bottom padding for navigation
           const SizedBox(height: 100),
         ],
