@@ -134,7 +134,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       await messagesService.init();
       
       // Get real user ID instead of hardcoded test user
-      final userId = ApiClient.userId;
+      final userId = api.ApiClient.userId;
       if (userId == null) {
         debugPrint('❌ No authenticated user - cannot sync messages');
         return;
