@@ -1250,7 +1250,19 @@ class _WhatIfScreenState extends ConsumerState<WhatIfScreen> {
       children: [
         // AI What-If Simulator Button
         GestureDetector(
-          onTap: () {
+          onTap: () async {
+            // ✅ PAYWALL: Check premium status before allowing simulator
+            final isPremium = await PremiumService.isPremium();
+            if (!isPremium) {
+              if (mounted) {
+                showDialog(
+                  context: context,
+                  builder: (context) => const PaywallDialog(feature: 'What If Simulator'),
+                );
+              }
+              return;
+            }
+            
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => _WhatIfChatScreen(
@@ -2447,6 +2459,18 @@ class _WhatIfChatScreenState extends State<_WhatIfChatScreen> {
   Future<void> _sendChatMessage() async {
     final text = _chatInputController.text.trim();
     if (text.isEmpty || _isLoading) return;
+
+    // ✅ PAYWALL: Check premium status before allowing simulator chat
+    final isPremium = await PremiumService.isPremium();
+    if (!isPremium) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => const PaywallDialog(feature: 'What If Simulator'),
+        );
+      }
+      return;
+    }
 
     final userMessage = ChatMessage(
       id: DateTime.now().toString(),

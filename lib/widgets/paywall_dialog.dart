@@ -218,7 +218,7 @@ class PaywallDialog extends StatelessWidget {
                     ],
                   ),
                   child: const Text(
-                    'Start Free Trial',
+                    'Buy Now',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 18,
