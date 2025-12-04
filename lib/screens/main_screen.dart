@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui';
 
 import '../design/tokens.dart';
+import '../providers/navigation_provider.dart';
 import 'home_screen.dart';
 import 'planner_screen.dart';
 import 'os_chat_screen.dart'; // New AI OS Chat tab
@@ -12,16 +14,15 @@ import 'habit_master_screen.dart';
 import 'reflections_screen.dart';
 import 'mirror_screen.dart';
 
-class MainScreen extends StatefulWidget {
+class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  ConsumerState<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen>
+class _MainScreenState extends ConsumerState<MainScreen>
     with TickerProviderStateMixin {
-  int _currentIndex = 0; // Default to Today tab (index 0)
   late PageController _pageController = PageController(initialPage: 0); // Initialize immediately
   late AnimationController _tabAnimationController;
   
@@ -82,10 +83,9 @@ class _MainScreenState extends State<MainScreen>
   }
   
   void _onTabTapped(int index) {
-    if (index != _currentIndex) {
-      setState(() {
-        _currentIndex = index;
-      });
+    final currentIndex = ref.read(navigationProvider);
+    if (index != currentIndex) {
+      ref.read(navigationProvider.notifier).navigateToTab(index);
       
       _pageController.animateToPage(
         index,
@@ -101,6 +101,19 @@ class _MainScreenState extends State<MainScreen>
 
   @override
   Widget build(BuildContext context) {
+    final currentIndex = ref.watch(navigationProvider);
+    
+    // Listen to navigation changes and update page controller
+    ref.listen(navigationProvider, (previous, next) {
+      if (previous != next) {
+        _pageController.animateToPage(
+          next,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+    
     return Scaffold(
       extendBody: true,
       resizeToAvoidBottomInset: false, // ✅ CRITICAL: Prevents bottom nav from moving with keyboard
@@ -117,9 +130,7 @@ class _MainScreenState extends State<MainScreen>
                 controller: _pageController,
                 physics: const NeverScrollableScrollPhysics(),
                 onPageChanged: (index) {
-                  setState(() {
-                    _currentIndex = index;
-                  });
+                  ref.read(navigationProvider.notifier).navigateToTab(index);
                 },
                 itemCount: _tabs.length,
                 itemBuilder: (context, index) {
@@ -132,7 +143,7 @@ class _MainScreenState extends State<MainScreen>
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: _buildBottomNavigation(),
+                child: _buildBottomNavigation(currentIndex),
               ),
             ],
           ),
@@ -286,7 +297,7 @@ class _MainScreenState extends State<MainScreen>
                     AnimatedPositioned(
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeOutCubic,
-                      left: _currentIndex * tabWidth,
+                      left: ref.watch(navigationProvider) * tabWidth,
                       child: Container(
                         width: tabWidth,
                         height: 64,
@@ -313,7 +324,7 @@ class _MainScreenState extends State<MainScreen>
                       children: _tabs.asMap().entries.map((entry) {
                         final index = entry.key;
                         final tab = entry.value;
-                        final isActive = index == _currentIndex;
+                        final isActive = index == ref.watch(navigationProvider);
                         
                         return _buildTabButton(tab, index, isActive);
                       }).toList(),

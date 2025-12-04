@@ -6,23 +6,30 @@ import 'package:firebase_auth/firebase_auth.dart';
 class PremiumService {
   static const String _premiumKey = 'is_premium';
   
-  // 🔧 TESTING: Add your email here to bypass paywall
-  static const List<String> _testEmails = [
-    'felix@example.com', // Replace with your actual email
+  // 🔧 DEVELOPER BYPASS: Add your email here to get free AI access
+  static const List<String> _developerEmails = [
+    'waazafaaza@gmail.com', // Felix's email - free AI access
+    'developer@futureyou.com',
     'test@futureyou.com',
   ];
   
   /// Check if user has premium access
   static Future<bool> isPremium() async {
-    // 🔧 TESTING: Check if current user email is in test list
+    // 🔧 DEVELOPER BYPASS: Check if current user email is in developer list
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser?.email != null && _testEmails.contains(currentUser!.email)) {
-      return true; // Bypass paywall for test emails
+    if (currentUser?.email != null && _developerEmails.contains(currentUser!.email)) {
+      return true; // Free AI access for developers
     }
     
     final prefs = await SharedPreferences.getInstance();
     // Default to FREE (false) - user must upgrade
     return prefs.getBool(_premiumKey) ?? false;
+  }
+  
+  /// Check if user is a developer (for UI purposes)
+  static Future<bool> isDeveloper() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    return currentUser?.email != null && _developerEmails.contains(currentUser!.email);
   }
   
   /// Set premium status (called after successful purchase)

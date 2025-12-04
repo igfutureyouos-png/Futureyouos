@@ -6,6 +6,9 @@ import '../design/tokens.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/glass_button.dart';
 import '../widgets/premium_debug_toggle.dart';
+import '../widgets/paywall_dialog.dart';
+import '../services/payment_service.dart';
+import '../services/premium_service.dart';
 import '../services/local_storage.dart';
 import '../services/auth_service.dart';
 import '../providers/habit_provider.dart';
@@ -649,6 +652,106 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           
           const SizedBox(height: AppSpacing.lg),
           
+          // 💎 SUBSCRIPTION MANAGEMENT
+          FutureBuilder<bool>(
+            future: PremiumService.isPremium(),
+            builder: (context, snapshot) {
+              final isPremium = snapshot.data ?? false;
+              return GlassCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          isPremium ? LucideIcons.crown : LucideIcons.sparkles,
+                          color: isPremium ? AppColors.emerald : AppColors.textSecondary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          isPremium ? 'AI Companion Active' : 'Upgrade to AI Companion',
+                          style: AppTextStyles.h3.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: isPremium ? AppColors.emerald : AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      isPremium 
+                          ? 'You have full access to all AI features'
+                          : 'Unlock unlimited AI conversations, What-If Engine, and more',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    if (isPremium) ...[
+                      // Subscription info for premium users
+                      FutureBuilder<Map<String, dynamic>?>(
+                        future: PaymentService.instance.getSubscriptionInfo(),
+                        builder: (context, subSnapshot) {
+                          final subInfo = subSnapshot.data;
+                          return Column(
+                            children: [
+                              _buildInfoRow('Status', 'Active', AppColors.emerald),
+                              if (subInfo != null) ...[
+                                _buildInfoRow('Plan', subInfo['productId']?.toString().contains('annual') == true ? 'Annual' : 'Monthly', AppColors.textPrimary),
+                                if (subInfo['expirationDate'] != null)
+                                  _buildInfoRow('Renews', _formatDate(subInfo['expirationDate']), AppColors.textSecondary),
+                              ],
+                              const SizedBox(height: AppSpacing.md),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildActionButton(
+                                      'Restore Purchases',
+                                      LucideIcons.refreshCw,
+                                      () => _restorePurchases(),
+                                      isSecondary: true,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _buildActionButton(
+                                      'Manage',
+                                      LucideIcons.externalLink,
+                                      () => _manageSubscription(),
+                                      isSecondary: true,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ] else ...[
+                      // Upgrade options for free users
+                      _buildActionButton(
+                        'Upgrade to AI Companion - \$6.99/mo',
+                        LucideIcons.sparkles,
+                        () => _showUpgradeDialog(),
+                        isSecondary: false,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _buildActionButton(
+                        'Restore Purchases',
+                        LucideIcons.refreshCw,
+                        () => _restorePurchases(),
+                        isSecondary: true,
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
+          
+          const SizedBox(height: AppSpacing.lg),
+          
           // 🔧 DEBUG: Premium Toggle (for testing paywall)
           GlassCard(
             child: Column(
@@ -926,5 +1029,124 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ),
     );
+  }
+
+  /// Show upgrade dialog with payment options
+  void _showUpgradeDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => const PaywallDialog(feature: 'Premium Features'),
+    );
+  }
+
+  /// Restore previous purchases
+  Future<void> _restorePurchases() async {
+    try {
+      final restored = await PaymentService.instance.restorePurchases();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(restored 
+                ? 'Purchases restored successfully!' 
+                : 'No previous purchases found.'),
+            backgroundColor: restored ? AppColors.emerald : Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        
+        // Refresh the UI
+        setState(() {});
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Restore failed: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Manage subscription (redirect to platform store)
+  void _manageSubscription() {
+    PaymentService.instance.cancelSubscription();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Redirecting to subscription management...'),
+        backgroundColor: AppColors.emerald,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// Build info row for subscription details
+  Widget _buildInfoRow(String label, String value, Color valueColor) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          Text(
+            value,
+            style: AppTextStyles.caption.copyWith(
+              color: valueColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build action button for subscription actions
+  Widget _buildActionButton(String text, IconData icon, VoidCallback onTap, {required bool isSecondary}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          gradient: isSecondary ? null : AppColors.emeraldGradient,
+          color: isSecondary ? Colors.transparent : null,
+          border: isSecondary ? Border.all(color: AppColors.glassBorder) : null,
+          borderRadius: BorderRadius.circular(AppBorderRadius.md),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSecondary ? AppColors.textSecondary : Colors.black,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                text,
+                style: AppTextStyles.caption.copyWith(
+                  color: isSecondary ? AppColors.textSecondary : Colors.black,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Format date for display
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 }

@@ -734,22 +734,92 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
         child: Align(
           alignment: Alignment.topCenter,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl * 2),
-            child: GlassCard(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xFFFF6B35).withOpacity(0.1),
+                    const Color(0xFFFF8C42).withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(AppBorderRadius.xl),
+                border: Border.all(
+                  color: const Color(0xFFFF6B35).withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(LucideIcons.calendar,
-                      size: 32, color: AppColors.textQuaternary),
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF6B35).withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      LucideIcons.target,
+                      size: 48,
+                      color: const Color(0xFFFF6B35),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(
+                    'Build Your Systems',
+                    style: AppTextStyles.h2.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.sm),
-                  Text('No habits or tasks for this day',
-                      style: AppTextStyles.bodySemiBold
-                          .copyWith(color: AppColors.textSecondary)),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text('Pick another date above or create a new one below.',
-                      style: AppTextStyles.caption
-                          .copyWith(color: AppColors.textTertiary),
-                      textAlign: TextAlign.center),
+                  Text(
+                    'No habits scheduled for this day.\nCreate powerful systems and habits to transform your future.',
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  GestureDetector(
+                    onTap: () => _tabController.animateTo(0), // Navigate to Add New tab
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.md,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFFFF6B35),
+                            const Color(0xFFFF8C42),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            LucideIcons.plus,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Text(
+                            'Create System',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

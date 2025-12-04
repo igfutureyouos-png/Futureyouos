@@ -26,6 +26,7 @@ import '../widgets/week_overview_card.dart';
 import '../services/welcome_series_local.dart';
 import '../data/welcome_series_content.dart';
 import '../widgets/welcome_day_modal.dart';
+import '../providers/navigation_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -298,17 +299,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   
   /// Navigate to OS Chat tab (index 2 in main screen)
   void _navigateToOSChat() {
-    // Find the MainScreen ancestor and switch to OS Chat tab
-    // This requires the MainScreen to expose a way to change tabs
-    // For now, we'll pop to root and use a global key or state management
-    
-    // Simple approach: Pop to root (main screen) and it should be on OS Chat
-    // The main screen state needs to be accessible to change the tab
-    // For MVP, we'll just navigate to the OS Chat screen directly
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => OSChatScreen()),
-    );
+    ref.read(navigationProvider.notifier).navigateToOSChat();
+  }
+
+  /// Navigate to Planner tab (index 1 in main screen)
+  void _navigateToPlanner() {
+    ref.read(navigationProvider.notifier).navigateToPlanner();
   }
 
   @override
@@ -356,11 +352,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     final activeLetters = isToday ? messagesService.getUnreadLetters() : [];
     
     // Collect scroll messages (briefs, debriefs, letters) - ONLY unread ones
+    // ✅ LIMIT messages to prevent grey screen overload
     final scrollMessages = <CoachMessage>[
       if (todaysBrief != null && !todaysBrief.isRead) todaysBrief,
       if (activeDebrief != null && !activeDebrief.isRead) activeDebrief,
-      ...activeLetters.where((letter) => !letter.isRead),
-    ];
+      ...activeLetters.where((letter) => !letter.isRead).take(3), // Limit to 3 letters max
+    ].take(5).toList(); // Limit total messages to 5 max
     
     // Format date like React: "Thursday, Oct 30, 2025"
     final dateFormatter = DateFormat('EEEE, MMM d, yyyy');
@@ -472,32 +469,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: AppSpacing.lg),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.lg,
-                              vertical: AppSpacing.md,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: AppColors.emeraldGradient,
-                              borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  LucideIcons.arrowRight,
-                                  color: Colors.black,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: AppSpacing.sm),
-                                Text(
-                                  'Go to Planner',
-                                  style: AppTextStyles.bodyMedium.copyWith(
+                          GestureDetector(
+                            onTap: _navigateToPlanner,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.lg,
+                                vertical: AppSpacing.md,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: AppColors.emeraldGradient,
+                                borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    LucideIcons.arrowRight,
                                     color: Colors.black,
-                                    fontWeight: FontWeight.w700,
+                                    size: 20,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Text(
+                                    'Go to Planner',
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],

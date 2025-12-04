@@ -2,15 +2,40 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../design/tokens.dart';
+import '../services/payment_service.dart';
+import '../services/premium_service.dart';
 
 /// Paywall dialog shown when non-premium users try to use AI features
-class PaywallDialog extends StatelessWidget {
+class PaywallDialog extends StatefulWidget {
   final String feature; // e.g., "AI Chat", "What If Engine"
   
   const PaywallDialog({
     super.key,
     required this.feature,
   });
+
+  @override
+  State<PaywallDialog> createState() => _PaywallDialogState();
+}
+
+class _PaywallDialogState extends State<PaywallDialog> {
+  bool _isLoading = false;
+  bool _isDeveloper = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkDeveloperStatus();
+  }
+
+  Future<void> _checkDeveloperStatus() async {
+    final isDev = await PremiumService.isDeveloper();
+    if (mounted) {
+      setState(() {
+        _isDeveloper = isDev;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +96,7 @@ class PaywallDialog extends StatelessWidget {
               
               // Title
               Text(
-                'Unlock $feature',
+                'Unlock ${widget.feature}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 28,
@@ -190,26 +215,17 @@ class PaywallDialog extends StatelessWidget {
               
               const SizedBox(height: 24),
               
-              // CTA Button
+              // Monthly Subscription Button
               GestureDetector(
-                onTap: () {
-                  // TODO: Navigate to subscription/payment screen
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Subscription flow coming soon!'),
-                      backgroundColor: AppColors.emerald,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
+                onTap: _isLoading ? null : () => _purchaseMonthly(),
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   decoration: BoxDecoration(
-                    gradient: AppColors.emeraldGradient,
+                    gradient: _isLoading ? null : AppColors.emeraldGradient,
+                    color: _isLoading ? Colors.grey : null,
                     borderRadius: BorderRadius.circular(AppBorderRadius.xl),
-                    boxShadow: [
+                    boxShadow: _isLoading ? null : [
                       BoxShadow(
                         color: AppColors.emerald.withOpacity(0.4),
                         blurRadius: 20,
@@ -217,19 +233,86 @@ class PaywallDialog extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const Text(
-                    'Buy Now',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.black,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text(
+                          'Start 7-Day Free Trial - \$6.99/mo',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.black,
+                          ),
+                        ),
                 ),
               ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.1, end: 0),
               
+              const SizedBox(height: 12),
+              
+              // Annual Subscription Button
+              GestureDetector(
+                onTap: _isLoading ? null : () => _purchaseAnnual(),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.emerald, width: 2),
+                    borderRadius: BorderRadius.circular(AppBorderRadius.xl),
+                  ),
+                  child: const Text(
+                    'Annual Plan - \$69.99/year (Save 16%)',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.emerald,
+                    ),
+                  ),
+                ),
+              ).animate().fadeIn(delay: 650.ms).slideY(begin: 0.1, end: 0),
+              
+              const SizedBox(height: 12),
+              
+              // Restore Purchases Button
+              TextButton(
+                onPressed: _isLoading ? null : _restorePurchases,
+                child: Text(
+                  'Restore Purchases',
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              
               const SizedBox(height: 16),
+              
+              // Developer Badge (if applicable)
+              if (_isDeveloper)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.emerald.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                    border: Border.all(color: AppColors.emerald, width: 1),
+                  ),
+                  child: Text(
+                    '🔧 Developer - Free AI Access',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.emerald,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              
+              const SizedBox(height: 8),
               
               // Cancel button
               TextButton(
@@ -276,6 +359,144 @@ class PaywallDialog extends StatelessWidget {
         ),
       ],
     ).animate().fadeIn(delay: delay.ms).slideX(begin: -0.1, end: 0);
+  }
+
+  /// Purchase monthly subscription
+  Future<void> _purchaseMonthly() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final success = await PaymentService.instance.purchaseMonthlySubscription();
+      
+      if (success && mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Welcome to AI Companion! ${widget.feature} is now unlocked.'),
+            backgroundColor: AppColors.emerald,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Purchase failed. Please try again.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  /// Purchase annual subscription
+  Future<void> _purchaseAnnual() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final success = await PaymentService.instance.purchaseAnnualSubscription();
+      
+      if (success && mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Welcome to AI Companion Annual! ${widget.feature} is now unlocked.'),
+            backgroundColor: AppColors.emerald,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Purchase failed. Please try again.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  /// Restore previous purchases
+  Future<void> _restorePurchases() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final restored = await PaymentService.instance.restorePurchases();
+      
+      if (restored && mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Purchases restored successfully!'),
+            backgroundColor: AppColors.emerald,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No previous purchases found.'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Restore failed: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 }
 

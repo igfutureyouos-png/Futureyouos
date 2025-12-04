@@ -5,6 +5,8 @@ import '../design/tokens.dart';
 import '../services/local_storage.dart';
 import '../services/api_client.dart';
 import '../services/welcome_series_local.dart';
+import '../services/payment_service.dart';
+import '../services/premium_service.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onComplete;
@@ -1427,7 +1429,7 @@ Feels: You'll feel transformed and strong, as your body recognizes this new leve
                 '✗ No AI OS',
                 '✗ No What-If Engine',
               ],
-              onTap: widget.onComplete,
+              onTap: () => _selectFreeTier(),
               isPrimary: false,
               delay: 300,
             ),
@@ -1451,7 +1453,7 @@ Feels: You'll feel transformed and strong, as your body recognizes this new leve
                 '✓ Habit & System Libraries',
                 '✓ Intelligent Scheduler',
               ],
-              onTap: widget.onComplete,
+              onTap: () => _purchaseMonthly(),
               isPrimary: true,
               delay: 400,
             ),
@@ -1472,7 +1474,7 @@ Feels: You'll feel transformed and strong, as your body recognizes this new leve
                 '✓ Founder badge',
                 '✓ Exclusive updates',
               ],
-              onTap: widget.onComplete,
+              onTap: () => _purchaseAnnual(),
               isPrimary: false,
               delay: 500,
             ),
@@ -1715,5 +1717,77 @@ Feels: You'll feel transformed and strong, as your body recognizes this new leve
         ),
       ),
     ).animate().fadeIn(delay: delay.ms, duration: 600.ms).slideY(begin: 0.1, end: 0);
+  }
+
+  /// Select free tier (no payment required)
+  void _selectFreeTier() {
+    // User chooses free tier - complete onboarding without payment
+    widget.onComplete();
+  }
+
+  /// Purchase monthly subscription
+  Future<void> _purchaseMonthly() async {
+    try {
+      final success = await PaymentService.instance.purchaseMonthlySubscription();
+      
+      if (success) {
+        // Payment successful - complete onboarding
+        widget.onComplete();
+      } else {
+        // Payment failed - show error
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Purchase failed. You can try again later or continue with the free tier.'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Purchase annual subscription
+  Future<void> _purchaseAnnual() async {
+    try {
+      final success = await PaymentService.instance.purchaseAnnualSubscription();
+      
+      if (success) {
+        // Payment successful - complete onboarding
+        widget.onComplete();
+      } else {
+        // Payment failed - show error
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Purchase failed. You can try again later or continue with the free tier.'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 }
