@@ -456,19 +456,53 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                           .scale(begin: const Offset(0.8, 0.8), duration: 600.ms, delay: 200.ms),
                       ),
                       
-                      // Timeline messages
-                      SliverPadding(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final message = _timeline[index];
-                              return _buildTimelineMessage(message);
-                            },
-                            childCount: _timeline.length,
+                      // Timeline messages or welcome message
+                      _timeline.isEmpty 
+                        ? SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.all(AppSpacing.xl),
+                              child: Center(
+                                child: Column(
+                                  children: [
+                                    const SizedBox(height: AppSpacing.xl),
+                                    Icon(
+                                      LucideIcons.messageCircle,
+                                      size: 48,
+                                      color: AppColors.emerald.withOpacity(0.5),
+                                    ),
+                                    const SizedBox(height: AppSpacing.lg),
+                                    Text(
+                                      'Your OS is ready',
+                                      style: AppTextStyles.h3.copyWith(
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppSpacing.sm),
+                                    Text(
+                                      'Start a conversation with your AI Operating System',
+                                      style: AppTextStyles.body.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: AppSpacing.xl),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          )
+                        : SliverPadding(
+                            padding: const EdgeInsets.all(AppSpacing.lg),
+                            sliver: SliverList(
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) {
+                                  final message = _timeline[index];
+                                  return _buildTimelineMessage(message);
+                                },
+                                childCount: _timeline.length,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
 
                       // Loading indicator
                       if (_isLoading)
@@ -512,8 +546,14 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                           ),
                         ),
 
-                      // Bottom padding
-                      const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                      // Flexible filler to prevent grey space when scrolling
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Container(
+                          color: const Color(0xFF18181B), // Match background
+                          child: const SizedBox(height: 200), // Minimum height
+                        ),
+                      ),
                     ],
                   ),
                 ),
