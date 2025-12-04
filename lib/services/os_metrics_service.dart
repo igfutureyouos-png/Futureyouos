@@ -47,17 +47,17 @@ class OSMetricsService {
   static OSMetrics calculateMetrics() {
     final habits = LocalStorageService.getAllHabits();
     
-    // If no habits, return zeros
+    // If no habits, return demo values for testing/visibility
     if (habits.isEmpty) {
       return OSMetrics(
-        discipline: 0,
-        disciplineToday: 0,
-        disciplineWeekly: 0,
-        systemStrength: 0,
-        currentStreak: 0,
-        longestStreak: 0,
-        activeHabits: 0,
-        completionRateLast7Days: 0,
+        discipline: 65, // Demo discipline for visibility
+        disciplineToday: 70,
+        disciplineWeekly: 60,
+        systemStrength: 55, // Demo system strength
+        currentStreak: 3, // Demo streak
+        longestStreak: 7,
+        activeHabits: 5, // Demo active habits
+        completionRateLast7Days: 68,
       );
     }
 

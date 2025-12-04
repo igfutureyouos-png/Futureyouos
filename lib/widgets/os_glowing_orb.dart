@@ -169,14 +169,18 @@ class _OSGlowingOrbState extends State<OSGlowingOrb>
       return AppColors.emerald;
     } else if (strength >= 50) {
       return AppColors.amber;
-    } else {
+    } else if (strength > 0) {
       return AppColors.error;
+    } else {
+      // Default emerald for zero metrics to ensure visibility
+      return AppColors.emerald.withOpacity(0.7);
     }
   }
 
   double _getGlowIntensity() {
-    // Higher system strength = brighter glow
-    return (widget.metrics.systemStrength / 100).clamp(0.3, 1.0);
+    // Higher system strength = brighter glow (ensure minimum visibility)
+    final rawIntensity = (widget.metrics.systemStrength / 100).clamp(0.0, 1.0);
+    return rawIntensity < 0.1 ? 0.5 : rawIntensity.clamp(0.3, 1.0); // Minimum 50% intensity for visibility
   }
 }
 
