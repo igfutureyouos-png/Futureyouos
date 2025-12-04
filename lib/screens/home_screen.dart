@@ -138,7 +138,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
         const Duration(seconds: 10),
         onTimeout: () {
           debugPrint('⚠️ Message sync timed out after 10s - continuing anyway');
-          return;
+          return false; // Return false to indicate timeout/failure
         },
       );
       
