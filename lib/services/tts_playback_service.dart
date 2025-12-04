@@ -1,13 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 /// 🔊 TTS PLAYBACK SERVICE
 /// Handles text-to-speech audio playback with auto-play tracking
 class TTSPlaybackService {
   static final AudioPlayer _player = AudioPlayer();
+  static final FlutterTts _flutterTts = FlutterTts();
   static String? _currentlyPlaying;
   static bool _isPlaying = false;
+  static bool _ttsInitialized = false;
 
   /// Play audio from URL
   static Future<void> playAudio(String audioUrl) async {
@@ -45,6 +48,7 @@ class TTSPlaybackService {
     try {
       if (_isPlaying) {
         await _player.stop();
+        await _flutterTts.stop();
         _isPlaying = false;
         _currentlyPlaying = null;
         debugPrint('⏹️ Audio stopped');
@@ -140,22 +144,62 @@ class TTSPlaybackService {
     }
   }
 
-  /// Speak text directly using device TTS (fallback for when no audio URL)
+  /// Initialize TTS if not already done
+  static Future<void> _initializeTTS() async {
+    if (_ttsInitialized) return;
+    
+    try {
+      // Set TTS configuration
+      await _flutterTts.setLanguage("en-US");
+      await _flutterTts.setSpeechRate(0.5); // Normal speed
+      await _flutterTts.setVolume(0.8);
+      await _flutterTts.setPitch(1.0);
+      
+      // Set completion handler
+      _flutterTts.setCompletionHandler(() {
+        _isPlaying = false;
+        debugPrint('✅ TTS completed');
+      });
+      
+      // Set error handler
+      _flutterTts.setErrorHandler((msg) {
+        _isPlaying = false;
+        debugPrint('❌ TTS error: $msg');
+      });
+      
+      _ttsInitialized = true;
+      debugPrint('✅ TTS initialized');
+    } catch (e) {
+      debugPrint('❌ Failed to initialize TTS: $e');
+    }
+  }
+
+  /// Speak text directly using device TTS
   static Future<void> speakText(String text) async {
     try {
-      debugPrint('🔊 Speaking text directly: ${text.substring(0, 50)}...');
+      debugPrint('🔊 Speaking text: ${text.length > 100 ? text.substring(0, 100) + '...' : text}');
       
       // Stop any currently playing audio
       await stopAudio();
+      await _flutterTts.stop();
+      
+      // Initialize TTS if needed
+      await _initializeTTS();
       
       _isPlaying = true;
       
-      // TODO: Implement actual TTS here
-      // For now, just simulate TTS with a delay
-      await Future.delayed(const Duration(seconds: 2));
+      // Clean up text for better TTS
+      String cleanText = text
+          .replaceAll(RegExp(r'[^\w\s.,!?-]'), '') // Remove special chars except basic punctuation
+          .replaceAll(RegExp(r'\s+'), ' ') // Replace multiple spaces with single space
+          .trim();
       
-      _isPlaying = false;
-      debugPrint('✅ Text speech completed');
+      if (cleanText.isEmpty) {
+        cleanText = "No content to read";
+      }
+      
+      // Speak the text
+      await _flutterTts.speak(cleanText);
       
     } catch (e) {
       debugPrint('❌ Failed to speak text: $e');
