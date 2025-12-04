@@ -78,14 +78,32 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
   /// 📊 Load OS metrics
   Future<void> _loadMetrics() async {
     try {
+      debugPrint('📊 Calculating OS metrics...');
       final metrics = OSMetricsService.calculateMetrics();
+      debugPrint('✅ Metrics calculated: Discipline ${metrics.discipline}%, Streak ${metrics.currentStreak}');
+      
       if (mounted) {
         setState(() {
           _metrics = metrics;
         });
       }
     } catch (e) {
-      debugPrint('Failed to load metrics: $e');
+      debugPrint('❌ Failed to load metrics: $e');
+      // Set default metrics instead of leaving null
+      if (mounted) {
+        setState(() {
+          _metrics = OSMetrics(
+            discipline: 0.0,
+            disciplineToday: 0.0,
+            disciplineWeekly: 0.0,
+            currentStreak: 0,
+            longestStreak: 0,
+            systemStrength: 0.0,
+            activeHabits: 0,
+            completionRateLast7Days: 0.0,
+          );
+        });
+      }
     }
   }
   
@@ -187,10 +205,21 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
   }
 
   Future<void> _initializeMessages() async {
-    await _messagesService.init();
-    await _loadTimeline();
-    setState(() => _initialized = true);
-    _scrollToBottom();
+    try {
+      debugPrint('🔄 Initializing OS Chat...');
+      await _messagesService.init();
+      debugPrint('✅ Messages service initialized');
+      
+      await _loadTimeline();
+      debugPrint('✅ Timeline loaded: ${_timeline.length} messages');
+      
+      setState(() => _initialized = true);
+      _scrollToBottom();
+      debugPrint('✅ OS Chat initialized successfully');
+    } catch (e) {
+      debugPrint('❌ Failed to initialize OS Chat: $e');
+      setState(() => _initialized = true); // Still mark as initialized to show UI
+    }
   }
 
   Future<void> _loadTimeline() async {
@@ -334,7 +363,23 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
       backgroundColor: Colors.transparent,
       resizeToAvoidBottomInset: false,
       body: !_initialized
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.emerald),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(
+                    'Initializing OS...',
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            )
           : Stack(
               children: [
                 // Content - stays fixed, doesn't move with keyboard
@@ -351,41 +396,71 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                       
                       // 🎯 STATUS HUD (Always show, use defaults if null)
                       SliverToBoxAdapter(
-                        child: OSStatusHUD(
-                          metrics: _metrics ?? OSMetrics(
-                            discipline: 0.0,
-                            disciplineToday: 0.0,
-                            disciplineWeekly: 0.0,
-                            currentStreak: 0,
-                            longestStreak: 0,
-                            systemStrength: 0.0,
-                            activeHabits: 0,
-                            completionRateLast7Days: 0.0,
-                          ),
-                          animate: true,
+                        child: Builder(
+                          builder: (context) {
+                            try {
+                              return OSStatusHUD(
+                                metrics: _metrics ?? OSMetrics(
+                                  discipline: 0.0,
+                                  disciplineToday: 0.0,
+                                  disciplineWeekly: 0.0,
+                                  currentStreak: 0,
+                                  longestStreak: 0,
+                                  systemStrength: 0.0,
+                                  activeHabits: 0,
+                                  completionRateLast7Days: 0.0,
+                                ),
+                                animate: true,
+                              );
+                            } catch (e) {
+                              debugPrint('❌ OSStatusHUD error: $e');
+                              return Padding(
+                                padding: const EdgeInsets.all(AppSpacing.lg),
+                                child: Text(
+                                  'Status HUD error: $e',
+                                  style: AppTextStyles.caption.copyWith(color: AppColors.error),
+                                ),
+                              );
+                            }
+                          },
                         ),
                       ),
                       
                       // 🌟 GLOWING ORB (Always show, use defaults if null)
                       SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-                          child: OSGlowingOrb(
-                            metrics: _metrics ?? OSMetrics(
-                              discipline: 0.0,
-                              disciplineToday: 0.0,
-                              disciplineWeekly: 0.0,
-                              currentStreak: 0,
-                              longestStreak: 0,
-                              systemStrength: 0.0,
-                              activeHabits: 0,
-                              completionRateLast7Days: 0.0,
-                            ),
-                            size: 120,
-                          ),
-                        ).animate()
-                          .fadeIn(duration: 600.ms, delay: 200.ms)
-                          .scale(begin: const Offset(0.8, 0.8), duration: 600.ms, delay: 200.ms),
+                        child: Builder(
+                          builder: (context) {
+                            try {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                                child: OSGlowingOrb(
+                                  metrics: _metrics ?? OSMetrics(
+                                    discipline: 0.0,
+                                    disciplineToday: 0.0,
+                                    disciplineWeekly: 0.0,
+                                    currentStreak: 0,
+                                    longestStreak: 0,
+                                    systemStrength: 0.0,
+                                    activeHabits: 0,
+                                    completionRateLast7Days: 0.0,
+                                  ),
+                                  size: 120,
+                                ),
+                              ).animate()
+                                .fadeIn(duration: 600.ms, delay: 200.ms)
+                                .scale(begin: const Offset(0.8, 0.8), duration: 600.ms, delay: 200.ms);
+                            } catch (e) {
+                              debugPrint('❌ OSGlowingOrb error: $e');
+                              return Padding(
+                                padding: const EdgeInsets.all(AppSpacing.lg),
+                                child: Text(
+                                  'Orb error: $e',
+                                  style: AppTextStyles.caption.copyWith(color: AppColors.error),
+                                ),
+                              );
+                            }
+                          },
+                        ),
                       ),
                       
                       // Timeline messages
