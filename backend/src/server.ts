@@ -55,17 +55,19 @@ const buildServer = () => {
     credentials: true,
   });
 
-  // Multipart support for file uploads (speech-to-text)
-  try {
-    fastify.register(require('@fastify/multipart'), {
-      limits: {
-        fileSize: 25 * 1024 * 1024, // 25MB max file size
-      },
-    });
-    console.log("✅ Multipart file upload support enabled");
-  } catch (err) {
-    console.warn("⚠️ Multipart registration failed (STT will be disabled):", err);
-  }
+  // Multipart support for file uploads (speech-to-text) - OPTIONAL
+  // Commenting out temporarily to fix deployment
+  // try {
+  //   fastify.register(require('@fastify/multipart'), {
+  //     limits: {
+  //       fileSize: 25 * 1024 * 1024, // 25MB max file size
+  //     },
+  //   });
+  //   console.log("✅ Multipart file upload support enabled");
+  // } catch (err) {
+  //   console.warn("⚠️ Multipart registration failed (STT will be disabled):", err);
+  // }
+  console.log("⚠️ Multipart/STT disabled for deployment stability");
 
   fastify.register(swagger, {
     openapi: {
@@ -152,15 +154,17 @@ const buildServer = () => {
       await metricsController(instance);
     }, { prefix: "/api/v1/user" });
     
-    // Speech-to-text endpoint (optional - graceful degradation)
-    try {
-      protectedRoutes.register(async (instance) => {
-        await speechController(instance);
-      }, { prefix: "/api/v1/speech" });
-      console.log("✅ Speech API endpoints registered");
-    } catch (err) {
-      console.warn("⚠️ Speech controller registration failed (STT/TTS disabled):", err);
-    }
+    // Speech-to-text endpoint - DISABLED for deployment stability
+    // Will re-enable after fixing multipart dependency
+    // try {
+    //   protectedRoutes.register(async (instance) => {
+    //     await speechController(instance);
+    //   }, { prefix: "/api/v1/speech" });
+    //   console.log("✅ Speech API endpoints registered");
+    // } catch (err) {
+    //   console.warn("⚠️ Speech controller registration failed (STT/TTS disabled):", err);
+    // }
+    console.log("⚠️ Speech API disabled for deployment stability");
     
     // V1 Chat (structured discovery + simple coach)
     protectedRoutes.register(futureYouChatController); // Future-You freeform chat (7 lenses)
