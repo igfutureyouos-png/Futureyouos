@@ -20,8 +20,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  final _displayNameController = TextEditingController();
-  final _emailController = TextEditingController();
   
   bool _notifDaily = true;
   bool _notifChat = false;
@@ -45,22 +43,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   
   @override
   void dispose() {
-    _displayNameController.dispose();
-    _emailController.dispose();
     super.dispose();
   }
   
   void _loadSettings() {
-    _displayNameController.text = LocalStorageService.getSetting<String>('displayName', defaultValue: 'Disciplined Builder') ?? '';
-    _emailController.text = LocalStorageService.getSetting<String>('email', defaultValue: 'you@example.com') ?? '';
     _notifDaily = LocalStorageService.getSetting<bool>('notifDaily', defaultValue: true) ?? true;
     _notifChat = LocalStorageService.getSetting<bool>('notifChat', defaultValue: false) ?? false;
     _selectedVoice = LocalStorageService.getSelectedVoice();
   }
   
   Future<void> _saveSettings() async {
-    await LocalStorageService.saveSetting('displayName', _displayNameController.text);
-    await LocalStorageService.saveSetting('email', _emailController.text);
     await LocalStorageService.saveSetting('notifDaily', _notifDaily);
     await LocalStorageService.saveSetting('notifChat', _notifChat);
     await LocalStorageService.setSelectedVoice(_selectedVoice);
@@ -238,54 +230,148 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           children: [
-            // Account section
-            GlassCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Account',
-                  style: AppTextStyles.h3.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                
-                Column(
-                  children: [
-                    _buildInputField(
-                      'Display Name',
-                      _displayNameController,
-                      LucideIcons.user,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    _buildInputField(
-                      'Email',
-                      _emailController,
-                      LucideIcons.mail,
-                    ),
+            // 💎 SUBSCRIPTION SECTION
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.emerald.withOpacity(0.1),
+                    AppColors.emerald.withOpacity(0.05),
                   ],
                 ),
-                
-                const SizedBox(height: AppSpacing.lg),
-                
-                SizedBox(
-                  width: double.infinity,
-                  child: GlassButton(
-                    onPressed: _saveSettings,
-                    child: Text(
-                      'Save Changes',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w600,
+                borderRadius: BorderRadius.circular(AppBorderRadius.xl),
+                border: Border.all(
+                  color: AppColors.emerald.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          gradient: AppColors.emeraldGradient,
+                          borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                        ),
+                        child: const Icon(
+                          LucideIcons.crown,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Future You Premium',
+                              style: AppTextStyles.h3.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.emerald,
+                              ),
+                            ),
+                            Text(
+                              'Unlock your full potential',
+                              style: AppTextStyles.captionSmall.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: AppSpacing.lg),
+                  
+                  // Premium Features
+                  Column(
+                    children: [
+                      _buildPremiumFeature(
+                        LucideIcons.brain,
+                        'AI Operating System',
+                        'Full access to your personal AI OS',
+                      ),
+                      _buildPremiumFeature(
+                        LucideIcons.messageCircle,
+                        'Unlimited AI Chat',
+                        'Chat with Future You, What-If Engine, and more',
+                      ),
+                      _buildPremiumFeature(
+                        LucideIcons.volume2,
+                        'Voice Messages',
+                        'Text-to-speech for all briefs and nudges',
+                      ),
+                      _buildPremiumFeature(
+                        LucideIcons.zap,
+                        'Smart Nudges',
+                        'Contextual reminders powered by AI',
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: AppSpacing.xl),
+                  
+                  // Subscription Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: AppColors.emeraldGradient,
+                        borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.emerald.withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _showSubscriptionOptions,
+                          borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.lg,
+                              horizontal: AppSpacing.xl,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  LucideIcons.sparkles,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                Text(
+                                  'Upgrade to Premium',
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          
-          const SizedBox(height: AppSpacing.lg),
+            
+            const SizedBox(height: AppSpacing.xl),
           
           // Notifications section
           GlassCard(
@@ -595,27 +681,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
   
-  Widget _buildInputField(String label, TextEditingController controller, IconData icon) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTextStyles.captionSmall.copyWith(
-            color: AppColors.textTertiary,
-          ),
-        ),
-        const SizedBox(height: 4),
-        TextFormField(
-          controller: controller,
-          style: AppTextStyles.body,
-          decoration: InputDecoration(
-            prefixIcon: Icon(icon, color: AppColors.textTertiary),
-          ),
-        ),
-      ],
-    );
-  }
   
   Widget _buildToggleSetting(String title, String subtitle, bool value, Function(bool) onChanged) {
     return Row(
@@ -647,6 +712,189 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
   
+  Widget _buildPremiumFeature(IconData icon, String title, String description) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.xs),
+            decoration: BoxDecoration(
+              color: AppColors.emerald.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(AppBorderRadius.sm),
+            ),
+            child: Icon(
+              icon,
+              color: AppColors.emerald,
+              size: 16,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Text(
+                  description,
+                  style: AppTextStyles.captionSmall.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSubscriptionOptions() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.baseDark2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.xl),
+        ),
+        title: Text(
+          'Choose Your Plan',
+          style: AppTextStyles.h3.copyWith(
+            color: AppColors.textPrimary,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildSubscriptionOption(
+              'Monthly',
+              '\$9.99/month',
+              'Full access to all premium features',
+              () => _handleSubscription('monthly'),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _buildSubscriptionOption(
+              'Yearly',
+              '\$99.99/year',
+              'Save 17% with annual billing',
+              () => _handleSubscription('yearly'),
+              isPopular: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubscriptionOption(
+    String title,
+    String price,
+    String description,
+    VoidCallback onTap, {
+    bool isPopular = false,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.glassBackground,
+        borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+        border: Border.all(
+          color: isPopular ? AppColors.emerald : AppColors.emerald.withOpacity(0.2),
+          width: isPopular ? 2 : 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      title,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    if (isPopular) ...[
+                      const SizedBox(width: AppSpacing.sm),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: AppColors.emeraldGradient,
+                          borderRadius: BorderRadius.circular(AppBorderRadius.sm),
+                        ),
+                        child: Text(
+                          'POPULAR',
+                          style: AppTextStyles.captionSmall.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  price,
+                  style: AppTextStyles.h3.copyWith(
+                    color: AppColors.emerald,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  description,
+                  style: AppTextStyles.captionSmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _handleSubscription(String plan) {
+    Navigator.pop(context);
+    // TODO: Implement actual subscription logic
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$plan subscription selected - implement payment flow'),
+        backgroundColor: AppColors.emerald,
+      ),
+    );
+  }
+
   Widget _buildNavigationItem(String title, IconData icon, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
