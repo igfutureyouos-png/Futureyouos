@@ -396,71 +396,46 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                       
                       // 🎯 STATUS HUD (Always show, use defaults if null)
                       SliverToBoxAdapter(
-                        child: Builder(
-                          builder: (context) {
-                            try {
-                              return OSStatusHUD(
-                                metrics: _metrics ?? OSMetrics(
-                                  discipline: 0.0,
-                                  disciplineToday: 0.0,
-                                  disciplineWeekly: 0.0,
-                                  currentStreak: 0,
-                                  longestStreak: 0,
-                                  systemStrength: 0.0,
-                                  activeHabits: 0,
-                                  completionRateLast7Days: 0.0,
-                                ),
-                                animate: true,
-                              );
-                            } catch (e) {
-                              debugPrint('❌ OSStatusHUD error: $e');
-                              return Padding(
-                                padding: const EdgeInsets.all(AppSpacing.lg),
-                                child: Text(
-                                  'Status HUD error: $e',
-                                  style: AppTextStyles.caption.copyWith(color: AppColors.error),
-                                ),
-                              );
-                            }
-                          },
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          child: OSStatusHUD(
+                            metrics: _metrics ?? OSMetrics(
+                              discipline: 0.0,
+                              disciplineToday: 0.0,
+                              disciplineWeekly: 0.0,
+                              currentStreak: 0,
+                              longestStreak: 0,
+                              systemStrength: 0.0,
+                              activeHabits: 0,
+                              completionRateLast7Days: 0.0,
+                            ),
+                            animate: true,
+                          ),
                         ),
                       ),
                       
                       // 🌟 GLOWING ORB (Always show, use defaults if null)
                       SliverToBoxAdapter(
-                        child: Builder(
-                          builder: (context) {
-                            try {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-                                child: OSGlowingOrb(
-                                  metrics: _metrics ?? OSMetrics(
-                                    discipline: 0.0,
-                                    disciplineToday: 0.0,
-                                    disciplineWeekly: 0.0,
-                                    currentStreak: 0,
-                                    longestStreak: 0,
-                                    systemStrength: 0.0,
-                                    activeHabits: 0,
-                                    completionRateLast7Days: 0.0,
-                                  ),
-                                  size: 120,
-                                ),
-                              ).animate()
-                                .fadeIn(duration: 600.ms, delay: 200.ms)
-                                .scale(begin: const Offset(0.8, 0.8), duration: 600.ms, delay: 200.ms);
-                            } catch (e) {
-                              debugPrint('❌ OSGlowingOrb error: $e');
-                              return Padding(
-                                padding: const EdgeInsets.all(AppSpacing.lg),
-                                child: Text(
-                                  'Orb error: $e',
-                                  style: AppTextStyles.caption.copyWith(color: AppColors.error),
-                                ),
-                              );
-                            }
-                          },
-                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl, horizontal: AppSpacing.md),
+                          child: Center(
+                            child: OSGlowingOrb(
+                              metrics: _metrics ?? OSMetrics(
+                                discipline: 0.0,
+                                disciplineToday: 0.0,
+                                disciplineWeekly: 0.0,
+                                currentStreak: 0,
+                                longestStreak: 0,
+                                systemStrength: 0.0,
+                                activeHabits: 0,
+                                completionRateLast7Days: 0.0,
+                              ),
+                              size: 120,
+                            ),
+                          ),
+                        ).animate()
+                          .fadeIn(duration: 600.ms, delay: 200.ms)
+                          .scale(begin: const Offset(0.8, 0.8), duration: 600.ms, delay: 200.ms),
                       ),
                       
                       // Timeline messages
