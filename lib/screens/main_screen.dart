@@ -143,7 +143,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: _buildBottomNavigation(currentIndex),
+                child: _buildBottomNavigation(),
               ),
             ],
           ),

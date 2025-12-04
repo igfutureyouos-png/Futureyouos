@@ -15,7 +15,7 @@ class PaymentService {
   static const String annualSubscriptionId = 'ai_companion_annual';
 
   bool _isInitialized = false;
-  StreamSubscription<List<PurchaseDetails>>? _purchaseSubscription;
+  StreamSubscription<List<PurchaseDetails>>? _purchaseStream;
   List<ProductDetails> _products = [];
 
   /// Initialize payment service
@@ -31,7 +31,7 @@ class PaymentService {
       }
 
       // Listen to purchase updates
-      _purchaseSubscription = InAppPurchase.instance.purchaseStream.listen(
+      _purchaseStream = InAppPurchase.instance.purchaseStream.listen(
         _handlePurchaseUpdates,
         onError: (error) {
           debugPrint('❌ Purchase stream error: $error');
@@ -209,6 +209,6 @@ class PaymentService {
 
   /// Dispose resources
   void dispose() {
-    _purchaseSubscription?.cancel();
+    _purchaseStream?.cancel();
   }
 }
