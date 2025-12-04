@@ -761,5 +761,81 @@ final List<CelebritySystem> celebritySystems = [
     emoji: '🏔️',
     gradientColors: [34, 197, 94, 22, 163, 74], // Green gradient
   ),
+  CelebritySystem(
+    name: 'Khabib Nurmagomedov',
+    title: 'Undefeated Discipline',
+    subtitle: '29-0 CHAMPION MENTALITY',
+    tier: '🔥 EXTREME INTENSITY',
+    habits: [
+      'Wake 6am prayer & meditation',
+      'Morning run 5-8km',
+      'Wrestling/grappling 2 hours',
+      'Strength training 90 min',
+      'Family time (non-negotiable)',
+      'Evening prayer & reflection',
+      'Zero alcohol, zero shortcuts',
+      'Study opponents 1 hour',
+    ],
+    whyViral: 'Retired undefeated - ultimate discipline wins',
+    emoji: '🦅',
+    gradientColors: [220, 38, 38, 153, 27, 27], // Red for the Eagle
+  ),
+  CelebritySystem(
+    name: 'Muhammad Ali',
+    title: 'The Greatest',
+    subtitle: 'FLOAT LIKE BUTTERFLY, STING LIKE BEE',
+    tier: '🔥 EXTREME INTENSITY',
+    habits: [
+      'Roadwork 5am (6 miles)',
+      'Shadow boxing 30 min',
+      'Heavy bag 15 rounds',
+      'Speed bag mastery',
+      'Sparring 10-12 rounds',
+      'Rope skipping 30 min',
+      'Core work 200 sit-ups',
+      'Mental visualization before sleep',
+    ],
+    whyViral: 'The greatest of all time - legendary work ethic',
+    emoji: '🥊',
+    gradientColors: [234, 179, 8, 202, 138, 4], // Gold for The Greatest
+  ),
+  CelebritySystem(
+    name: 'Eliud Kipchoge',
+    title: 'Sub-2 Hour Marathon',
+    subtitle: 'NO HUMAN IS LIMITED',
+    tier: '🔥 EXTREME INTENSITY',
+    habits: [
+      'Wake 5:00am training camp',
+      '25-40km morning run',
+      'Porridge breakfast 6:30am',
+      'Rest & massage 9am',
+      'Afternoon 10km run',
+      'Strength & core work',
+      'Early bed 9pm (no exceptions)',
+      'Mental training & philosophy reading',
+    ],
+    whyViral: 'Broke 2-hour marathon - proof of human potential',
+    emoji: '🏃',
+    gradientColors: [249, 115, 22, 234, 88, 12], // Orange for speed
+  ),
+  CelebritySystem(
+    name: 'Conor McGregor',
+    title: 'Mystic Mac Precision',
+    subtitle: 'PRECISION BEATS POWER',
+    tier: '🔥 EXTREME INTENSITY',
+    habits: [
+      'Movement drills 6am',
+      'Sparring & pad work',
+      'Yoga & mobility 90 min',
+      'Visualization training',
+      'Media/business work',
+      'Evening training session',
+      'Ice baths & recovery',
+      'Study opponents religiously',
+    ],
+    whyViral: 'First 2-division UFC champ - manifested success',
+    emoji: '👑',
+    gradientColors: [16, 185, 129, 5, 150, 105], // Emerald green for Irish
+  ),
 ];
 

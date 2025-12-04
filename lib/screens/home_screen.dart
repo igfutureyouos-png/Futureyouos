@@ -49,35 +49,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
 
   Future<void> _initializeScreen() async {
     try {
-      // 🔥 NEW: Sync identity to backend if not already synced
-      try {
-        await api.ApiClient.syncIdentityToBackend();
-      } catch (e) {
-        debugPrint('⚠️ Identity sync skipped: $e');
-      }
-      
-      // Initialize welcome series first
-      await welcomeSeriesLocal.init();
-      
-      // Check if welcome series needs to be started (for new users)
-      if (!welcomeSeriesLocal.hasStarted()) {
-        debugPrint('🌑 Welcome series not started, starting now...');
-        await welcomeSeriesLocal.start();
-      }
-      
-      // Debug: Check welcome series status
-      final stats = welcomeSeriesLocal.getStats();
-      debugPrint('🌑 Welcome series stats: $stats');
-      
-      // Refresh messages
-      await _refreshMessages();
-      
-      // Check for brief and welcome day
-      _checkForMorningBrief();
-      _checkForWelcomeDay();
-      
-      // Load unread count
-      _loadUnreadCount();
+      // Add timeout to entire initialization to prevent grey screen
+      await Future.any([
+        _performInitialization(),
+        Future.delayed(const Duration(seconds: 15), () {
+          debugPrint('⏰ Initialization timeout - forcing UI render');
+          if (mounted) setState(() {});
+        }),
+      ]);
     } catch (e, stackTrace) {
       debugPrint('❌ Error initializing home screen: $e');
       debugPrint('Stack trace: $stackTrace');
@@ -86,6 +65,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
         setState(() {});
       }
     }
+  }
+  
+  Future<void> _performInitialization() async {
+    // 🔥 NEW: Sync identity to backend if not already synced
+    try {
+      await api.ApiClient.syncIdentityToBackend().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          debugPrint('⚠️ Identity sync timed out - skipping');
+          return null;
+        },
+      );
+    } catch (e) {
+      debugPrint('⚠️ Identity sync skipped: $e');
+    }
+    
+    // Initialize welcome series first
+    await welcomeSeriesLocal.init();
+    
+    // Check if welcome series needs to be started (for new users)
+    if (!welcomeSeriesLocal.hasStarted()) {
+      debugPrint('🌑 Welcome series not started, starting now...');
+      await welcomeSeriesLocal.start();
+    }
+    
+    // Debug: Check welcome series status
+    final stats = welcomeSeriesLocal.getStats();
+    debugPrint('🌑 Welcome series stats: $stats');
+    
+    // Refresh messages (with timeout)
+    await _refreshMessages();
+    
+    // Check for brief and welcome day
+    _checkForMorningBrief();
+    _checkForWelcomeDay();
+    
+    // Load unread count
+    _loadUnreadCount();
   }
 
   @override
@@ -116,7 +133,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       // Ensure messages service is initialized (init() is safe to call multiple times)
       await messagesService.init();
       
-      await messagesService.syncMessages('test-user-felix');
+      // Add timeout to prevent hanging
+      await messagesService.syncMessages('test-user-felix').timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          debugPrint('⚠️ Message sync timed out after 10s - continuing anyway');
+          return;
+        },
+      );
       
       // Small delay to ensure local storage is updated
       await Future.delayed(const Duration(milliseconds: 100));

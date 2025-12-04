@@ -320,7 +320,7 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
 
         setState(() {
           _timeline.add(aiMessage);
-          _isLoading = false;
+          _isLoading = false);
         });
 
         _scrollToBottom();
@@ -328,16 +328,34 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
         // Refresh metrics after conversation (AI may reference new data)
         _loadMetrics();
       } else {
-        throw Exception(response.error ?? 'Unknown error');
+        // Check if it's a paywall error (should have been caught earlier, but just in case)
+        if (response.error?.contains('Premium') == true || response.error?.contains('premium') == true) {
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder: (context) => const PaywallDialog(feature: 'AI Chat'),
+            );
+          }
+        } else {
+          throw Exception(response.error ?? 'Unknown error');
+        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to send message: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        // Check if it's a premium error in the exception message
+        if (e.toString().toLowerCase().contains('premium')) {
+          showDialog(
+            context: context,
+            builder: (context) => const PaywallDialog(feature: 'AI Chat'),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to send message: $e'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
       }
       setState(() => _isLoading = false);
     }

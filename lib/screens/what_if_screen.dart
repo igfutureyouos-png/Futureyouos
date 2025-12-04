@@ -421,16 +421,33 @@ class _WhatIfScreenState extends ConsumerState<WhatIfScreen> {
       } else {
         setState(() => _isLoading = false);
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.error ?? 'Chat failed'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        
+        // Check if it's a paywall error
+        if (result.error?.contains('Premium') == true || result.error?.contains('premium') == true) {
+          showDialog(
+            context: context,
+            builder: (context) => const PaywallDialog(feature: 'What If Engine'),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.error ?? 'Chat failed'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
       }
     } catch (e) {
       setState(() => _isLoading = false);
       debugPrint('❌ Chat error: $e');
+      
+      // Check if it's a premium error in the exception message
+      if (mounted && e.toString().toLowerCase().contains('premium')) {
+        showDialog(
+          context: context,
+          builder: (context) => const PaywallDialog(feature: 'What If Engine'),
+        );
+      }
     }
 
     _scrollToBottom();
