@@ -360,7 +360,7 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: const Color(0xFF18181B), // Dark background (not transparent)
       resizeToAvoidBottomInset: false,
       body: !_initialized
           ? Center(
