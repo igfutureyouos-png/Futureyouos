@@ -320,7 +320,7 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
 
         setState(() {
           _timeline.add(aiMessage);
-          _isLoading = false);
+          _isLoading = false;
         });
 
         _scrollToBottom();
