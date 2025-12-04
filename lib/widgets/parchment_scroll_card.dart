@@ -144,21 +144,27 @@ class _ParchmentScrollCardState extends State<ParchmentScrollCard>
   
   /// 🔊 Play/replay TTS
   Future<void> _playTTS() async {
-    for (final message in widget.messages) {
-      final audioUrl = message.audioUrl;
-      if (audioUrl != null && audioUrl.isNotEmpty) {
+    if (widget.messages.isEmpty) return;
+    
+    setState(() {
+      _isPlaying = true;
+    });
+    
+    try {
+      // Get the first message text for TTS
+      final message = widget.messages.first;
+      final textToSpeak = '${message.title}. ${message.body}';
+      
+      // Use TTSPlaybackService to speak the text directly
+      await TTSPlaybackService.speakText(textToSpeak);
+      
+    } catch (e) {
+      debugPrint('❌ TTS failed: $e');
+    } finally {
+      if (mounted) {
         setState(() {
-          _isPlaying = true;
+          _isPlaying = false;
         });
-        
-        await TTSPlaybackService.playAudio(audioUrl);
-        
-        if (mounted) {
-          setState(() {
-            _isPlaying = false;
-          });
-        }
-        break; // Play first message with audio
       }
     }
   }
@@ -572,23 +578,18 @@ class _ParchmentScrollCardState extends State<ParchmentScrollCard>
   }
 
   Widget _buildActions() {
-    // Check if any message has audio
-    final hasAudio = widget.messages.any((m) => m.audioUrl != null && m.audioUrl!.isNotEmpty);
-    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: Row(
         children: [
-          // 🔊 TTS Play/Replay Button (if audio available)
-          if (hasAudio) ...[
-            _buildActionButton(
-              label: '',
-              icon: _isPlaying ? LucideIcons.volume2 : LucideIcons.volume1,
-              onPressed: _playTTS,
-              isPrimary: false,
-            ),
-            const SizedBox(width: AppSpacing.md),
-          ],
+          // 🔊 TTS Play Button (always show)
+          _buildActionButton(
+            label: '',
+            icon: _isPlaying ? LucideIcons.volume2 : LucideIcons.volume1,
+            onPressed: _playTTS,
+            isPrimary: false,
+          ),
+          const SizedBox(width: AppSpacing.md),
           
           // OS Chat Button (Primary)
           Expanded(

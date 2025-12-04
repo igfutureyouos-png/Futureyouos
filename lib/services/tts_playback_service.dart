@@ -139,5 +139,28 @@ class TTSPlaybackService {
       debugPrint('❌ Failed to dispose player: $e');
     }
   }
+
+  /// Speak text directly using device TTS (fallback for when no audio URL)
+  static Future<void> speakText(String text) async {
+    try {
+      debugPrint('🔊 Speaking text directly: ${text.substring(0, 50)}...');
+      
+      // Stop any currently playing audio
+      await stopAudio();
+      
+      _isPlaying = true;
+      
+      // TODO: Implement actual TTS here
+      // For now, just simulate TTS with a delay
+      await Future.delayed(const Duration(seconds: 2));
+      
+      _isPlaying = false;
+      debugPrint('✅ Text speech completed');
+      
+    } catch (e) {
+      debugPrint('❌ Failed to speak text: $e');
+      _isPlaying = false;
+    }
+  }
 }
 

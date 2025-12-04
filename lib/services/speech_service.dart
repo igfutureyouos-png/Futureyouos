@@ -14,7 +14,7 @@ class SpeechService {
   static bool _isRecording = false;
 
   /// Check if STT is supported on this platform
-  static bool get isSupported => !Platform.isLinux;
+  static bool get isSupported => true; // Enable STT on all platforms for testing
 
   /// Check if currently recording
   static bool get isRecording => _isRecording;

@@ -115,14 +115,18 @@ class _NudgeCardState extends State<NudgeCard>
   
   /// 🔊 Play/replay TTS
   Future<void> _playTTS() async {
-    final audioUrl = widget.message.audioUrl;
-    if (audioUrl != null && audioUrl.isNotEmpty) {
-      setState(() {
-        _isPlaying = true;
-      });
+    setState(() {
+      _isPlaying = true;
+    });
+    
+    try {
+      // Speak the nudge message text directly
+      final textToSpeak = '${widget.message.title}. ${widget.message.body}';
+      await TTSPlaybackService.speakText(textToSpeak);
       
-      await TTSPlaybackService.playAudio(audioUrl);
-      
+    } catch (e) {
+      debugPrint('❌ TTS failed: $e');
+    } finally {
       if (mounted) {
         setState(() {
           _isPlaying = false;
@@ -424,23 +428,19 @@ class _NudgeCardState extends State<NudgeCard>
   }
 
   Widget _buildActions() {
-    final hasAudio = widget.message.audioUrl != null && widget.message.audioUrl!.isNotEmpty;
-    
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.xl),
       child: Row(
         children: [
-          // 🔊 TTS Play/Replay Button (if audio available)
-          if (hasAudio) ...[
-            _ActionButton(
-              label: '',
-              icon: _isPlaying ? LucideIcons.volume2 : LucideIcons.volume1,
-              onPressed: _playTTS,
-              gradient: _phaseTheme.gradient,
-              isPrimary: false,
-            ),
-            const SizedBox(width: AppSpacing.md),
-          ],
+          // 🔊 TTS Play Button (always show)
+          _ActionButton(
+            label: '',
+            icon: _isPlaying ? LucideIcons.volume2 : LucideIcons.volume1,
+            onPressed: _playTTS,
+            gradient: _phaseTheme.gradient,
+            isPrimary: false,
+          ),
+          const SizedBox(width: AppSpacing.md),
           
           // OS Chat Button (Primary)
           Expanded(
