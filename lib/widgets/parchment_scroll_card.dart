@@ -180,7 +180,7 @@ class _ParchmentScrollCardState extends State<ParchmentScrollCard>
         // Fallback to device TTS if ElevenLabs fails
         await TTSPlaybackService.speakText(textToSpeak);
       } else {
-        debugPrint('✅ ElevenLabs TTS successful with voice: $voiceKey');
+        debugPrint('✅ ElevenLabs TTS successful');
       }
       
     } catch (e) {
