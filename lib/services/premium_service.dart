@@ -21,11 +21,12 @@ class PremiumService {
     // 🔍 DEBUG: Print current user info
     print('🔍 PREMIUM CHECK:');
     print('  Current user: ${currentUser?.email ?? "Not logged in"}');
+    print('  User UID: ${currentUser?.uid ?? "No UID"}');
     print('  Developer emails: $_developerEmails');
     print('  Email match: ${currentUser?.email != null && _developerEmails.contains(currentUser!.email)}');
     
     if (currentUser?.email != null && _developerEmails.contains(currentUser!.email)) {
-      print('  ✅ DEVELOPER ACCESS GRANTED');
+      print('  ✅ DEVELOPER ACCESS GRANTED FOR: ${currentUser!.email}');
       return true; // Free AI access for developers
     }
     

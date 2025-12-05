@@ -101,14 +101,13 @@ class _NudgeCardState extends State<NudgeCard>
         _isPlaying = true;
       });
       
-      // Get appropriate voice for nudge (drill sergeant style)
-      final voiceKey = ElevenLabsTTSService.getVoiceForMessageType('nudge');
+      // Use user's selected voice from settings
       final textToSpeak = '${widget.message.title}. ${widget.message.body}';
       
       final success = await ElevenLabsTTSService.autoPlayIfNeeded(
         messageId: widget.message.id,
         text: textToSpeak,
-        voiceKey: voiceKey,
+        // voiceKey: null, // Use user's selected voice
       );
       
       if (mounted) {
@@ -132,13 +131,12 @@ class _NudgeCardState extends State<NudgeCard>
     });
     
     try {
-      // Speak the nudge message using ElevenLabs drill voice
+      // Use user's selected voice from settings
       final textToSpeak = '${widget.message.title}. ${widget.message.body}';
-      final voiceKey = ElevenLabsTTSService.getVoiceForMessageType('nudge');
       
       final success = await ElevenLabsTTSService.speakText(
         text: textToSpeak,
-        voiceKey: voiceKey,
+        // voiceKey: null, // Use user's selected voice
       );
       
       if (!success) {

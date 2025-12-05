@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_client.dart';
+import 'local_storage.dart';
 
 /// 🔊 ELEVENLABS TTS SERVICE
 /// Handles text-to-speech using your paid ElevenLabs voices via backend
@@ -78,11 +79,15 @@ class ElevenLabsTTSService {
   /// Generate and play voice in one call
   static Future<bool> speakText({
     required String text,
-    String voiceKey = 'marcus',
+    String? voiceKey, // Made nullable to use user's selected voice
   }) async {
     try {
+      // Use user's selected voice from settings if no specific voice provided
+      final selectedVoice = voiceKey ?? LocalStorageService.getSelectedVoice();
+      debugPrint('🔊 Using voice: $selectedVoice (user selected: ${LocalStorageService.getSelectedVoice()})');
+      
       // Generate voice using ElevenLabs
-      final audioUrl = await generateVoice(text: text, voiceKey: voiceKey);
+      final audioUrl = await generateVoice(text: text, voiceKey: selectedVoice);
       
       if (audioUrl != null) {
         await playAudio(audioUrl);
@@ -156,7 +161,7 @@ class ElevenLabsTTSService {
   static Future<bool> autoPlayIfNeeded({
     required String messageId,
     required String text,
-    String voiceKey = 'marcus',
+    String? voiceKey, // Made nullable to use user's selected voice
   }) async {
     final alreadyPlayed = await hasAutoPlayed(messageId);
     

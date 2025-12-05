@@ -129,14 +129,13 @@ class _ParchmentScrollCardState extends State<ParchmentScrollCard>
           _isPlaying = true;
         });
         
-        // Get appropriate voice for message type
-        final voiceKey = ElevenLabsTTSService.getVoiceForMessageType(message.kind.name);
+        // Use user's selected voice from settings
         final textToSpeak = '${message.title}. ${message.body}';
         
         final success = await ElevenLabsTTSService.autoPlayIfNeeded(
           messageId: message.id,
           text: textToSpeak,
-          voiceKey: voiceKey,
+          // voiceKey: null, // Use user's selected voice
         );
         
         if (mounted) {
@@ -169,13 +168,11 @@ class _ParchmentScrollCardState extends State<ParchmentScrollCard>
       final message = widget.messages.first;
       final textToSpeak = '${message.title}. ${message.body}';
       
-      // Get appropriate ElevenLabs voice for message type
-      final voiceKey = ElevenLabsTTSService.getVoiceForMessageType(message.kind.name);
-      
+      // Use user's selected voice from settings
       // Try ElevenLabs first
       final success = await ElevenLabsTTSService.speakText(
         text: textToSpeak,
-        voiceKey: voiceKey,
+        // voiceKey: null, // Use user's selected voice
       );
       
       if (!success) {

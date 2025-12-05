@@ -323,13 +323,12 @@ class _AwakeningCardState extends State<_AwakeningCard> {
     });
     
     try {
-      // Use Buddha voice for spiritual awakening messages
+      // Use user's selected voice from settings
       final textToSpeak = '${widget.message.title}. ${widget.message.body}';
-      final voiceKey = ElevenLabsTTSService.getVoiceForMessageType('awakening');
       
       final success = await ElevenLabsTTSService.speakText(
         text: textToSpeak,
-        voiceKey: voiceKey,
+        // voiceKey: null, // Use user's selected voice
       );
       
       if (success) {
