@@ -462,7 +462,7 @@ class _AwakeningCardState extends State<_AwakeningCard> {
                 _ActionButton(
                   label: _isPlaying ? 'Playing...' : 'Listen',
                   icon: _isPlaying ? LucideIcons.volume2 : LucideIcons.volume1,
-                  onTap: _isPlaying ? null : _playAwakeningTTS,
+                  onTap: _isPlaying ? null : () => _playAwakeningTTS(),
                 ),
                 _ActionButton(
                   label: 'Copy',
@@ -545,7 +545,7 @@ class _AwakeningCardState extends State<_AwakeningCard> {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xl),
       child: card
-          .animate(delay: (index * 80).ms)
+          .animate(delay: (widget.index * 80).ms)
           .fadeIn(duration: 600.ms)
           .slideY(begin: 0.15, end: 0, duration: 600.ms, curve: Curves.easeOutCubic)
           .then()
