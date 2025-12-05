@@ -5,13 +5,20 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
+# Install ALL dependencies (including dev deps for build)
 # Use --legacy-peer-deps for chromadb compatibility with openai@6
-RUN npm ci --only=production --legacy-peer-deps
+RUN npm ci --legacy-peer-deps
 
-# Copy built application
-COPY dist/ ./dist/
+# Copy source code
+COPY src/ ./src/
 COPY prisma/ ./prisma/
+COPY tsconfig.json ./
+
+# Build the application (creates dist/)
+RUN npm run build
+
+# Remove dev dependencies to reduce image size
+RUN npm ci --only=production --legacy-peer-deps
 
 # Expose port
 EXPOSE 3000
