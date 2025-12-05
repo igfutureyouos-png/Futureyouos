@@ -17,13 +17,24 @@ class PremiumService {
   static Future<bool> isPremium() async {
     // 🔧 DEVELOPER BYPASS: Check if current user email is in developer list
     final currentUser = FirebaseAuth.instance.currentUser;
+    
+    // 🔍 DEBUG: Print current user info
+    print('🔍 PREMIUM CHECK:');
+    print('  Current user: ${currentUser?.email ?? "Not logged in"}');
+    print('  Developer emails: $_developerEmails');
+    print('  Email match: ${currentUser?.email != null && _developerEmails.contains(currentUser!.email)}');
+    
     if (currentUser?.email != null && _developerEmails.contains(currentUser!.email)) {
+      print('  ✅ DEVELOPER ACCESS GRANTED');
       return true; // Free AI access for developers
     }
     
     final prefs = await SharedPreferences.getInstance();
+    final premiumStatus = prefs.getBool(_premiumKey) ?? false;
+    print('  SharedPrefs premium: $premiumStatus');
+    
     // Default to FREE (false) - user must upgrade
-    return prefs.getBool(_premiumKey) ?? false;
+    return premiumStatus;
   }
   
   /// Check if user is a developer (for UI purposes)
