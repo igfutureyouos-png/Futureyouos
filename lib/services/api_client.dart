@@ -856,6 +856,29 @@ class ApiClient {
     }
   }
 
+  // 🔊 ElevenLabs Voice Generation
+  static Future<ApiResponse<Map<String, dynamic>>> generateVoice({
+    required String text,
+    String voiceKey = 'marcus',
+  }) async {
+    try {
+      final response = await _post('/v1/voice/speak', {
+        'text': text,
+        'voiceKey': voiceKey,
+      });
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return ApiResponse.success(data);
+      } else {
+        return ApiResponse.error('Voice generation failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Voice generation error: $e');
+      return ApiResponse.error('Network error: $e');
+    }
+  }
+
   // Save What-If output card to Vault
   static Future<ApiResponse<void>> saveToVault({
     required String content,

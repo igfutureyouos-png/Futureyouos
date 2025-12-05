@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import '../models/coach_message.dart';
 import '../services/messages_service.dart';
 import '../services/tts_playback_service.dart';
+import '../services/elevenlabs_tts_service.dart';
 import '../design/tokens.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -110,39 +111,52 @@ class _ParchmentScrollCardState extends State<ParchmentScrollCard>
     _autoPlayTTSIfNeeded();
   }
   
-  /// 🔊 Auto-play TTS on first appearance
+  /// 🔊 Auto-play ElevenLabs TTS on first appearance
   Future<void> _autoPlayTTSIfNeeded() async {
     // Wait for entrance animation to complete
     await Future.delayed(const Duration(milliseconds: 1200));
     
     if (!mounted) return;
     
-    // Check if any message has audio URL
-    for (final message in widget.messages) {
-      final audioUrl = message.audioUrl;
-      if (audioUrl != null && audioUrl.isNotEmpty) {
-        // Check if already auto-played
-        final alreadyPlayed = await TTSPlaybackService.hasAutoPlayed(message.id);
-        if (!alreadyPlayed && mounted) {
+    // Auto-play first message using ElevenLabs
+    if (widget.messages.isNotEmpty) {
+      final message = widget.messages.first;
+      final alreadyPlayed = await ElevenLabsTTSService.hasAutoPlayed(message.id);
+      
+      if (!alreadyPlayed && mounted) {
+        setState(() {
+          _hasAutoPlayed = true;
+          _isPlaying = true;
+        });
+        
+        // Get appropriate voice for message type
+        final voiceKey = ElevenLabsTTSService.getVoiceForMessageType(message.kind.name);
+        final textToSpeak = '${message.title}. ${message.body}';
+        
+        final success = await ElevenLabsTTSService.autoPlayIfNeeded(
+          messageId: message.id,
+          text: textToSpeak,
+          voiceKey: voiceKey,
+        );
+        
+        if (mounted) {
           setState(() {
-            _hasAutoPlayed = true;
-            _isPlaying = true;
+            _isPlaying = false;
           });
-          
-          await TTSPlaybackService.autoPlayIfNeeded(message.id, audioUrl);
-          
-          if (mounted) {
-            setState(() {
-              _isPlaying = false;
-            });
-          }
-          break; // Only auto-play first message with audio
+        }
+        
+        if (success) {
+          debugPrint('✅ ElevenLabs auto-play successful for ${message.kind.name}');
+        } else {
+          debugPrint('⚠️ ElevenLabs failed, trying device TTS fallback');
+          // Fallback to device TTS if ElevenLabs fails
+          await TTSPlaybackService.speakText(textToSpeak);
         }
       }
     }
   }
   
-  /// 🔊 Play/replay TTS
+  /// 🔊 Play/replay ElevenLabs TTS
   Future<void> _playTTS() async {
     if (widget.messages.isEmpty) return;
     
@@ -155,8 +169,22 @@ class _ParchmentScrollCardState extends State<ParchmentScrollCard>
       final message = widget.messages.first;
       final textToSpeak = '${message.title}. ${message.body}';
       
-      // Use TTSPlaybackService to speak the text directly
-      await TTSPlaybackService.speakText(textToSpeak);
+      // Get appropriate ElevenLabs voice for message type
+      final voiceKey = ElevenLabsTTSService.getVoiceForMessageType(message.kind.name);
+      
+      // Try ElevenLabs first
+      final success = await ElevenLabsTTSService.speakText(
+        text: textToSpeak,
+        voiceKey: voiceKey,
+      );
+      
+      if (!success) {
+        debugPrint('⚠️ ElevenLabs failed, using device TTS fallback');
+        // Fallback to device TTS if ElevenLabs fails
+        await TTSPlaybackService.speakText(textToSpeak);
+      } else {
+        debugPrint('✅ ElevenLabs TTS successful with voice: $voiceKey');
+      }
       
     } catch (e) {
       debugPrint('❌ TTS failed: $e');

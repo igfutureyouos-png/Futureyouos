@@ -4,6 +4,7 @@ import 'dart:ui';
 import '../models/coach_message.dart';
 import '../services/messages_service.dart';
 import '../services/tts_playback_service.dart';
+import '../services/elevenlabs_tts_service.dart';
 import '../design/tokens.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -86,43 +87,67 @@ class _NudgeCardState extends State<NudgeCard>
     _autoPlayTTSIfNeeded();
   }
   
-  /// 🔊 Auto-play TTS on first appearance
+  /// 🔊 Auto-play ElevenLabs TTS on first appearance
   Future<void> _autoPlayTTSIfNeeded() async {
     // Wait for entrance animation
     await Future.delayed(const Duration(milliseconds: 1000));
     
     if (!mounted) return;
     
-    final audioUrl = widget.message.audioUrl;
-    if (audioUrl != null && audioUrl.isNotEmpty) {
-      final alreadyPlayed = await TTSPlaybackService.hasAutoPlayed(widget.message.id);
-      if (!alreadyPlayed && mounted) {
+    final alreadyPlayed = await ElevenLabsTTSService.hasAutoPlayed(widget.message.id);
+    if (!alreadyPlayed && mounted) {
+      setState(() {
+        _hasAutoPlayed = true;
+        _isPlaying = true;
+      });
+      
+      // Get appropriate voice for nudge (drill sergeant style)
+      final voiceKey = ElevenLabsTTSService.getVoiceForMessageType('nudge');
+      final textToSpeak = '${widget.message.title}. ${widget.message.body}';
+      
+      final success = await ElevenLabsTTSService.autoPlayIfNeeded(
+        messageId: widget.message.id,
+        text: textToSpeak,
+        voiceKey: voiceKey,
+      );
+      
+      if (mounted) {
         setState(() {
-          _hasAutoPlayed = true;
-          _isPlaying = true;
+          _isPlaying = false;
         });
-        
-        await TTSPlaybackService.autoPlayIfNeeded(widget.message.id, audioUrl);
-        
-        if (mounted) {
-          setState(() {
-            _isPlaying = false;
-          });
-        }
+      }
+      
+      if (!success) {
+        debugPrint('⚠️ ElevenLabs nudge failed, using device TTS fallback');
+        // Fallback to device TTS if ElevenLabs fails
+        await TTSPlaybackService.speakText(textToSpeak);
       }
     }
   }
   
-  /// 🔊 Play/replay TTS
+  /// 🔊 Play/replay ElevenLabs TTS
   Future<void> _playTTS() async {
     setState(() {
       _isPlaying = true;
     });
     
     try {
-      // Speak the nudge message text directly
+      // Speak the nudge message using ElevenLabs drill voice
       final textToSpeak = '${widget.message.title}. ${widget.message.body}';
-      await TTSPlaybackService.speakText(textToSpeak);
+      final voiceKey = ElevenLabsTTSService.getVoiceForMessageType('nudge');
+      
+      final success = await ElevenLabsTTSService.speakText(
+        text: textToSpeak,
+        voiceKey: voiceKey,
+      );
+      
+      if (!success) {
+        debugPrint('⚠️ ElevenLabs nudge failed, using device TTS fallback');
+        // Fallback to device TTS if ElevenLabs fails
+        await TTSPlaybackService.speakText(textToSpeak);
+      } else {
+        debugPrint('✅ ElevenLabs nudge TTS successful with drill voice');
+      }
       
     } catch (e) {
       debugPrint('❌ TTS failed: $e');

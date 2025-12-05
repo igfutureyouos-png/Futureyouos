@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../design/tokens.dart';
 import '../models/coach_message.dart';
 import '../services/messages_service.dart';
+import '../services/elevenlabs_tts_service.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/simple_header.dart';
 
@@ -293,9 +294,9 @@ class _FilterChip extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// AWAKENING CARD - Special UI for 7-day welcome series
+// AWAKENING CARD - Special UI for 7-day welcome series with ElevenLabs TTS
 // ═══════════════════════════════════════════════════════════════
-class _AwakeningCard extends StatelessWidget {
+class _AwakeningCard extends StatefulWidget {
   final CoachMessage message;
   final int index;
   final VoidCallback onRead;
@@ -307,6 +308,46 @@ class _AwakeningCard extends StatelessWidget {
     required this.onRead,
     required this.onDelete,
   });
+
+  @override
+  State<_AwakeningCard> createState() => _AwakeningCardState();
+}
+
+class _AwakeningCardState extends State<_AwakeningCard> {
+  bool _isPlaying = false;
+
+  /// 🔊 Play ElevenLabs TTS for awakening message
+  Future<void> _playAwakeningTTS() async {
+    setState(() {
+      _isPlaying = true;
+    });
+    
+    try {
+      // Use Buddha voice for spiritual awakening messages
+      final textToSpeak = '${widget.message.title}. ${widget.message.body}';
+      final voiceKey = ElevenLabsTTSService.getVoiceForMessageType('awakening');
+      
+      final success = await ElevenLabsTTSService.speakText(
+        text: textToSpeak,
+        voiceKey: voiceKey,
+      );
+      
+      if (success) {
+        debugPrint('✅ ElevenLabs awakening TTS successful with Buddha voice');
+      } else {
+        debugPrint('⚠️ ElevenLabs awakening failed, no fallback for awakening messages');
+      }
+      
+    } catch (e) {
+      debugPrint('❌ Awakening TTS failed: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -352,7 +393,7 @@ class _AwakeningCard extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      message.emoji,
+                      widget.message.emoji,
                       style: const TextStyle(fontSize: 24),
                     ),
                     const SizedBox(width: AppSpacing.md),
@@ -373,7 +414,7 @@ class _AwakeningCard extends StatelessWidget {
 
             // Title with special formatting
             Text(
-              message.title,
+              widget.message.title,
               style: AppTextStyles.h3.copyWith(
                 fontWeight: FontWeight.w300, // Lighter weight for philosophical feel
                 letterSpacing: 0.5,
@@ -402,7 +443,7 @@ class _AwakeningCard extends StatelessWidget {
 
             // Body text
             Text(
-              message.body,
+              widget.message.body,
               style: AppTextStyles.body.copyWith(
                 color: const Color(0xFFA0AEC0), // Softer gray
                 height: 1.8,
@@ -417,11 +458,17 @@ class _AwakeningCard extends StatelessWidget {
               spacing: AppSpacing.sm,
               runSpacing: AppSpacing.sm,
               children: [
+                // 🔊 ElevenLabs TTS Button
+                _ActionButton(
+                  label: _isPlaying ? 'Playing...' : 'Listen',
+                  icon: _isPlaying ? LucideIcons.volume2 : LucideIcons.volume1,
+                  onTap: _isPlaying ? null : _playAwakeningTTS,
+                ),
                 _ActionButton(
                   label: 'Copy',
                   icon: LucideIcons.copy,
                   onTap: () async {
-                    await Clipboard.setData(ClipboardData(text: message.body));
+                    await Clipboard.setData(ClipboardData(text: widget.message.body));
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -443,8 +490,8 @@ class _AwakeningCard extends StatelessWidget {
                   icon: LucideIcons.share2,
                   onTap: () async {
                     await Share.share(
-                      '${message.title}\n\n${message.body}\n\n— Future-You OS',
-                      subject: message.title,
+                      '${widget.message.title}\n\n${widget.message.body}\n\n— Future-You OS',
+                      subject: widget.message.title,
                     );
                   },
                 ),
@@ -475,7 +522,7 @@ class _AwakeningCard extends StatelessWidget {
                           TextButton(
                             onPressed: () async {
                               Navigator.pop(context);
-                              await onDelete();
+                              await widget.onDelete();
                             },
                             child: const Text(
                               'Delete',
