@@ -245,11 +245,12 @@ async function runEveningDebrief(userId: string) {
 
 async function runNudge(userId: string, trigger: string) {
   // 🔒 PAYWALL: Only send nudges to premium users
-  const isPremium = await premiumService.isPremium(userId);
-  if (!isPremium) {
-    console.log(`⏭️ Skipping nudge for free user: ${userId}`);
-    return { ok: true, skipped: true, reason: "not_premium" };
-  }
+  // TEMP: Disabled for testing - re-enable before production launch
+  // const isPremium = await premiumService.isPremium(userId);
+  // if (!isPremium) {
+  //   console.log(`⏭️ Skipping nudge for free user: ${userId}`);
+  //   return { ok: true, skipped: true, reason: "not_premium" };
+  // }
 
   const timestamp = new Date().toISOString();
   console.log(`\n🔔 ================================`);

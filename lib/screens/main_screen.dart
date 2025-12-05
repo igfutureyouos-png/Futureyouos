@@ -85,14 +85,10 @@ class _MainScreenState extends ConsumerState<MainScreen>
   void _onTabTapped(int index) {
     final currentIndex = ref.read(navigationProvider);
     if (index != currentIndex) {
+      // Update provider - the ref.listen below will handle page navigation
       ref.read(navigationProvider.notifier).navigateToTab(index);
       
-      _pageController.animateToPage(
-        index,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-      
+      // Tab animation feedback
       _tabAnimationController.forward().then((_) {
         _tabAnimationController.reverse();
       });

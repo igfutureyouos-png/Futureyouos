@@ -352,12 +352,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     final activeLetters = isToday ? messagesService.getUnreadLetters() : [];
     
     // Collect scroll messages (briefs, debriefs, letters) - ONLY unread ones
-    // ✅ LIMIT messages to prevent grey screen overload
+    // ✅ STRICT LIMIT: Max 1 of each type to prevent grey screen overload
+    final unreadLetters = activeLetters.where((letter) => !letter.isRead).toList();
     final scrollMessages = <CoachMessage>[
       if (todaysBrief != null && !todaysBrief.isRead) todaysBrief,
       if (activeDebrief != null && !activeDebrief.isRead) activeDebrief,
-      ...activeLetters.where((letter) => !letter.isRead).take(3), // Limit to 3 letters max
-    ].take(5).toList(); // Limit total messages to 5 max
+      if (unreadLetters.isNotEmpty) unreadLetters.first, // Only first unread letter
+    ]; // Max 3 messages total (1 brief + 1 debrief + 1 letter)
     
     // Format date like React: "Thursday, Oct 30, 2025"
     final dateFormatter = DateFormat('EEEE, MMM d, yyyy');

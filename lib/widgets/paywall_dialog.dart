@@ -90,7 +90,8 @@ class _PaywallDialogState extends State<PaywallDialog> {
                   size: 40,
                   color: Colors.black,
                 ),
-              ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
+              ).animate().scale(duration: 500.ms, curve: Curves.elasticOut)
+               .then(delay: 500.ms).shimmer(duration: 2000.ms, color: Colors.white.withOpacity(0.3)),
               
               const SizedBox(height: 24),
               
@@ -126,19 +127,19 @@ class _PaywallDialogState extends State<PaywallDialog> {
                 'Unlimited AI conversations',
                 delay: 300,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               _buildFeature(
                 LucideIcons.zap,
                 'What-If Engine & Planning',
                 delay: 350,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               _buildFeature(
                 LucideIcons.brain,
                 'Memory System (AI remembers you)',
                 delay: 400,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               _buildFeature(
                 LucideIcons.sunrise,
                 'Daily Briefs & Debriefs',
@@ -293,26 +294,6 @@ class _PaywallDialogState extends State<PaywallDialog> {
               ),
               
               const SizedBox(height: 16),
-              
-              // Developer Badge (if applicable)
-              if (_isDeveloper)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.emerald.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                    border: Border.all(color: AppColors.emerald, width: 1),
-                  ),
-                  child: Text(
-                    '🔧 Developer - Free AI Access',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.emerald,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              
-              const SizedBox(height: 8),
               
               // Cancel button
               TextButton(

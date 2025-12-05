@@ -241,15 +241,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.emerald.withOpacity(0.1),
+                    AppColors.emerald.withOpacity(0.2),
+                    AppColors.cyan.withOpacity(0.1),
                     AppColors.emerald.withOpacity(0.05),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(AppBorderRadius.xl),
                 border: Border.all(
-                  color: AppColors.emerald.withOpacity(0.3),
-                  width: 1,
+                  color: AppColors.emerald.withOpacity(0.4),
+                  width: 1.5,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.emerald.withOpacity(0.15),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
               padding: const EdgeInsets.all(AppSpacing.xl),
               child: Column(
@@ -332,7 +340,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         borderRadius: BorderRadius.circular(AppBorderRadius.lg),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.emerald.withOpacity(0.3),
+                            color: AppColors.emerald.withOpacity(0.5),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -368,143 +376,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: AppSpacing.xl),
-
-            // 🔍 DEBUG SECTION (for Felix)
-            GlassCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '🔍 Premium Debug (Felix Only)',
-                    style: AppTextStyles.h3.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.emerald,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  
-                  // Debug Premium Status Button
-                  GestureDetector(
-                    onTap: () async {
-                      final debugInfo = await PremiumDebugService.debugPremiumStatus();
-                      if (mounted) {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            backgroundColor: AppColors.baseDark2,
-                            title: Text(
-                              'Premium Debug Info',
-                              style: AppTextStyles.h3.copyWith(color: AppColors.textPrimary),
-                            ),
-                            content: SingleChildScrollView(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: debugInfo.entries.map((entry) {
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 4),
-                                    child: Text(
-                                      '${entry.key}: ${entry.value}',
-                                      style: AppTextStyles.body.copyWith(
-                                        color: AppColors.textSecondary,
-                                        fontFamily: 'monospace',
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: Text(
-                                  'Close',
-                                  style: TextStyle(color: AppColors.emerald),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      decoration: BoxDecoration(
-                        color: AppColors.emerald.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                        border: Border.all(
-                          color: AppColors.emerald.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            LucideIcons.bug,
-                            color: AppColors.emerald,
-                            size: 20,
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Text(
-                            'Debug Premium Status',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.emerald,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: AppSpacing.md),
-                  
-                  // Force Premium Button
-                  GestureDetector(
-                    onTap: () async {
-                      await PremiumDebugService.forceSetPremium(true);
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('✅ Premium FORCED to TRUE'),
-                            backgroundColor: AppColors.emerald,
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      decoration: BoxDecoration(
-                        color: AppColors.emerald.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                        border: Border.all(
-                          color: AppColors.emerald.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            LucideIcons.zap,
-                            color: AppColors.emerald,
-                            size: 20,
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Text(
-                            'Force Enable Premium',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.emerald,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ),
