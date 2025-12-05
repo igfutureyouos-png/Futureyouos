@@ -462,7 +462,7 @@ class _AwakeningCardState extends State<_AwakeningCard> {
                 _ActionButton(
                   label: _isPlaying ? 'Playing...' : 'Listen',
                   icon: _isPlaying ? LucideIcons.volume2 : LucideIcons.volume1,
-                  onTap: _isPlaying ? null : () => _playAwakeningTTS(),
+                  onTap: _isPlaying ? () {} : () => _playAwakeningTTS(),
                 ),
                 _ActionButton(
                   label: 'Copy',
