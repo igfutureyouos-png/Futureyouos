@@ -93,7 +93,7 @@ class ElevenLabsTTSService {
         await playAudio(audioUrl);
         return true;
       } else {
-        debugPrint('⚠️ No audio URL generated, falling back to device TTS');
+        debugPrint('❌ No audio URL generated from ElevenLabs');
         return false;
       }
     } catch (e) {

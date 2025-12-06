@@ -205,7 +205,7 @@ class _PaywallDialogState extends State<PaywallDialog> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Cancel anytime • 7-day free trial',
+                      'Cancel anytime',
                       style: AppTextStyles.caption.copyWith(
                         color: AppColors.textTertiary,
                       ),
@@ -244,7 +244,7 @@ class _PaywallDialogState extends State<PaywallDialog> {
                           ),
                         )
                       : const Text(
-                          'Start 7-Day Free Trial - \$6.99/mo',
+                          'Get Premium - \$6.99/mo',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 16,

@@ -5,11 +5,9 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../design/tokens.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/glass_button.dart';
-import '../widgets/premium_debug_toggle.dart';
 import '../widgets/paywall_dialog.dart';
 import '../services/payment_service.dart';
 import '../services/premium_service.dart';
-import '../services/premium_debug_service.dart';
 import '../services/local_storage.dart';
 import '../services/auth_service.dart';
 import '../providers/habit_provider.dart';
@@ -762,29 +760,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const SizedBox(height: AppSpacing.lg),
           
           // 🔧 DEBUG: Premium Toggle (for testing paywall)
-          GlassCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Debug Settings',
-                  style: AppTextStyles.h3.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  'Toggle premium status to test paywall functionality',
-                  style: AppTextStyles.captionSmall.copyWith(
-                    color: AppColors.textQuaternary,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                const PremiumDebugToggle(),
-              ],
-            ),
-          ),
-          
           // Bottom padding for navigation
           const SizedBox(height: 100),
         ],
