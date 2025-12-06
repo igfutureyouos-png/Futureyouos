@@ -102,11 +102,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
     // Listen to navigation changes and update page controller
     ref.listen(navigationProvider, (previous, next) {
       if (previous != next) {
-        _pageController.animateToPage(
-          next,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
+        // Jump directly to the page without animation
+        _pageController.jumpToPage(next);
       }
     });
     
