@@ -7,7 +7,7 @@ import { prisma } from "../utils/db";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 const ELEVEN_API_KEY = process.env.ELEVENLABS_API_KEY || "";
-const ELEVEN_TTS_TIMEOUT_MS = Number(process.env.ELEVENLABS_TTS_TIMEOUT_MS || 10000);
+const ELEVEN_TTS_TIMEOUT_MS = Number(process.env.ELEVENLABS_TTS_TIMEOUT_MS || 60000); // 60s for long texts
 
 // map mentor -> voiceId via env
 const VOICES: Record<string, string | undefined> = {
