@@ -117,9 +117,7 @@ class _NudgeCardState extends State<NudgeCard>
       }
       
       if (!success) {
-        debugPrint('⚠️ ElevenLabs nudge failed, using device TTS fallback');
-        // Fallback to device TTS if ElevenLabs fails
-        await TTSPlaybackService.speakText(textToSpeak);
+        debugPrint('❌ ElevenLabs nudge auto-play failed - NO FALLBACK');
       }
     }
   }
@@ -139,12 +137,10 @@ class _NudgeCardState extends State<NudgeCard>
         // voiceKey: null, // Use user's selected voice
       );
       
-      if (!success) {
-        debugPrint('⚠️ ElevenLabs nudge failed, using device TTS fallback');
-        // Fallback to device TTS if ElevenLabs fails
-        await TTSPlaybackService.speakText(textToSpeak);
+      if (success) {
+        debugPrint('✅ ElevenLabs nudge TTS successful');
       } else {
-        debugPrint('✅ ElevenLabs nudge TTS successful with drill voice');
+        debugPrint('❌ ElevenLabs nudge replay failed - NO FALLBACK');
       }
       
     } catch (e) {

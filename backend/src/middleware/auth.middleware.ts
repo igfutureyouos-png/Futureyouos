@@ -79,6 +79,7 @@ async function ensureUserExists(userId: string, email: string | null): Promise<v
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
+      select: { id: true }, // Only select id to avoid isPremium column error
     });
 
     // If user doesn't exist, create them
@@ -88,6 +89,7 @@ async function ensureUserExists(userId: string, email: string | null): Promise<v
           id: userId,
           email: email || undefined,
           createdAt: new Date(),
+          isPremium: false, // Default to free tier
         },
       });
       console.log(`✅ Auto-created user in database: ${userId} (${email})`);

@@ -147,9 +147,7 @@ class _ParchmentScrollCardState extends State<ParchmentScrollCard>
         if (success) {
           debugPrint('✅ ElevenLabs auto-play successful for ${message.kind.name}');
         } else {
-          debugPrint('⚠️ ElevenLabs failed, trying device TTS fallback');
-          // Fallback to device TTS if ElevenLabs fails
-          await TTSPlaybackService.speakText(textToSpeak);
+          debugPrint('❌ ElevenLabs failed - NO FALLBACK (using ElevenLabs only)');
         }
       }
     }
@@ -175,12 +173,10 @@ class _ParchmentScrollCardState extends State<ParchmentScrollCard>
         // voiceKey: null, // Use user's selected voice
       );
       
-      if (!success) {
-        debugPrint('⚠️ ElevenLabs failed, using device TTS fallback');
-        // Fallback to device TTS if ElevenLabs fails
-        await TTSPlaybackService.speakText(textToSpeak);
-      } else {
+      if (success) {
         debugPrint('✅ ElevenLabs TTS successful');
+      } else {
+        debugPrint('❌ ElevenLabs failed - NO FALLBACK (using ElevenLabs only)');
       }
       
     } catch (e) {
