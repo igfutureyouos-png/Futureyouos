@@ -867,20 +867,26 @@ class ApiClient {
     String voiceKey = 'marcus',
   }) async {
     try {
+      debugPrint('📤 API CALL: POST /api/v1/speech/generate - Voice: $voiceKey, Text length: ${text.length}');
+      
       final response = await _post('/api/v1/speech/generate', {
         'text': text,
         'voiceKey': voiceKey,
       });
       
+      debugPrint('📥 API RESPONSE: Status ${response.statusCode}, Body: ${response.body}');
+      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
+        debugPrint('✅ Voice generation SUCCESS - Data keys: ${data.keys.toList()}');
         return ApiResponse.success(data);
       } else {
         debugPrint('❌ Voice generation failed: ${response.statusCode} - ${response.body}');
         return ApiResponse.error('Voice generation failed: ${response.statusCode}');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('❌ Voice generation error: $e');
+      debugPrint('Stack trace: $stackTrace');
       return ApiResponse.error('Network error: $e');
     }
   }
