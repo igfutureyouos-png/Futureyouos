@@ -104,6 +104,30 @@ export async function speechController(fastify: FastifyInstance) {
   });
 
   /**
+   * POST /api/v1/speech/generate
+   * Generate ElevenLabs TTS audio for given text
+   */
+  fastify.post("/generate", async (req: any, reply: FastifyReply) => {
+    const userId = req?.user?.id || req.headers["x-user-id"];
+    if (!userId) {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+
+    const { text, voiceKey } = req.body || {};
+    if (!text) {
+      return reply.status(400).send({ error: "Text required" });
+    }
+
+    try {
+      const result = await voiceService.speak(userId, text, voiceKey || "marcus");
+      return reply.send(result);
+    } catch (err: any) {
+      console.error("❌ Voice generation failed:", err);
+      return reply.status(500).send({ error: err.message || "Voice generation failed" });
+    }
+  });
+
+  /**
    * GET /api/v1/speech/test
    * Test endpoint to verify speech controller is registered
    */

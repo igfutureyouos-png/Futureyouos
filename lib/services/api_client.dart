@@ -867,7 +867,7 @@ class ApiClient {
     String voiceKey = 'marcus',
   }) async {
     try {
-      final response = await _post('/v1/voice/speak', {
+      final response = await _post('/api/v1/speech/generate', {
         'text': text,
         'voiceKey': voiceKey,
       });
@@ -876,10 +876,11 @@ class ApiClient {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         return ApiResponse.success(data);
       } else {
+        debugPrint('❌ Voice generation failed: ${response.statusCode} - ${response.body}');
         return ApiResponse.error('Voice generation failed: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Voice generation error: $e');
+      debugPrint('❌ Voice generation error: $e');
       return ApiResponse.error('Network error: $e');
     }
   }
