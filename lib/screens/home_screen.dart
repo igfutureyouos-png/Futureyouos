@@ -49,60 +49,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   }
 
   Future<void> _initializeScreen() async {
+    // Force UI render IMMEDIATELY - don't wait for anything
+    if (mounted) setState(() {});
+    
     try {
-      // Add timeout to entire initialization to prevent grey screen
+      // Run initialization in background with SHORT timeout
       await Future.any([
         _performInitialization(),
-        Future.delayed(const Duration(seconds: 15), () {
-          debugPrint('⏰ Initialization timeout - forcing UI render');
-          if (mounted) setState(() {});
+        Future.delayed(const Duration(seconds: 3), () {
+          debugPrint('⏰ Initialization timeout - UI already rendered');
         }),
       ]);
     } catch (e, stackTrace) {
       debugPrint('❌ Error initializing home screen: $e');
       debugPrint('Stack trace: $stackTrace');
-      // Ensure UI still renders even if initialization fails
-      if (mounted) {
-        setState(() {});
-      }
     }
   }
   
   Future<void> _performInitialization() async {
-    // 🔥 NEW: Sync identity to backend if not already synced
+    // Skip identity sync on home screen - not critical
+    // Initialize welcome series (fast, local only)
     try {
-      await api.ApiClient.syncIdentityToBackend().timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          debugPrint('⚠️ Identity sync timed out - skipping');
-          return null;
-        },
-      );
+      await welcomeSeriesLocal.init();
+      if (!welcomeSeriesLocal.hasStarted()) {
+        await welcomeSeriesLocal.start();
+      }
     } catch (e) {
-      debugPrint('⚠️ Identity sync skipped: $e');
+      debugPrint('⚠️ Welcome series init failed: $e');
     }
     
-    // Initialize welcome series first
-    await welcomeSeriesLocal.init();
-    
-    // Check if welcome series needs to be started (for new users)
-    if (!welcomeSeriesLocal.hasStarted()) {
-      debugPrint('🌑 Welcome series not started, starting now...');
-      await welcomeSeriesLocal.start();
-    }
-    
-    // Debug: Check welcome series status
-    final stats = welcomeSeriesLocal.getStats();
-    debugPrint('🌑 Welcome series stats: $stats');
-    
-    // Refresh messages (with timeout)
+    // Refresh messages with SHORT timeout
     await _refreshMessages();
     
-    // Check for brief and welcome day
+    // Check for brief and welcome day (non-blocking)
     _checkForMorningBrief();
     _checkForWelcomeDay();
-    
-    // Load unread count
     _loadUnreadCount();
   }
 
@@ -120,12 +101,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     }
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Refresh when screen becomes visible
-    _refreshMessages();
-  }
+  // Removed didChangeDependencies to prevent excessive refreshes
 
   Future<void> _refreshMessages() async {
     try {
@@ -141,17 +117,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
         return;
       }
       
-      // Add timeout to prevent hanging
+      // Add SHORT timeout to prevent hanging
       await messagesService.syncMessages(userId).timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 2),
         onTimeout: () {
-          debugPrint('⚠️ Message sync timed out after 10s - continuing anyway');
-          return false; // Return false to indicate timeout/failure
+          debugPrint('⚠️ Message sync timed out after 2s - using cached messages');
+          return false;
         },
       );
-      
-      // Small delay to ensure local storage is updated
-      await Future.delayed(const Duration(milliseconds: 100));
       
       if (mounted) {
         setState(() {
