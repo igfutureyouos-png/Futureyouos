@@ -839,11 +839,16 @@ class ApiClient {
     await syncIdentityToBackend();
     
     try {
-      final response = await _post('/api/v1/chat', {'message': message});
+      // Use v2 endpoint (premium checks disabled for testing)
+      final response = await _post('/api/v2/future-you/freeform', {'message': message});
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        return ApiResponse.success(data);
+        // v2 endpoint returns { message: "..." } so wrap it properly
+        return ApiResponse.success({
+          'message': data['message'],
+          'phase': 'observer', // v2 doesn't return phase, default to observer
+        });
       } else {
         return ApiResponse.error('Chat failed: ${response.statusCode}');
       }
