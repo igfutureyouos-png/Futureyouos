@@ -40,6 +40,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   bool _hasShownBrief = false;
   bool _hasShownWelcomeDay = false;
   int _unreadCount = 0;
+  bool _isInitialized = false;
   
   @override
   void initState() {
@@ -49,27 +50,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   }
 
   Future<void> _initializeScreen() async {
-    // Force UI render IMMEDIATELY - don't wait for anything
-    if (mounted) setState(() {});
-    
     try {
-      // Run initialization in background with SHORT timeout
-      await Future.any([
-        _performInitialization(),
-        Future.delayed(const Duration(seconds: 3), () {
-          debugPrint('⏰ Initialization timeout - UI already rendered');
-        }),
-      ]);
+      // Step 1: Initialize messages service FIRST (critical for UI)
+      await messagesService.init();
+      
+      // Step 2: Load initial unread count (fast, synchronous)
+      _unreadCount = messagesService.getUnreadCount();
+      
+      // Step 3: NOW render UI with initialized data
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
+      
+      // Step 4: Background sync (non-blocking)
+      _performBackgroundSync();
+      
     } catch (e, stackTrace) {
       debugPrint('❌ Error initializing home screen: $e');
       debugPrint('Stack trace: $stackTrace');
+      // Always show UI even on error to prevent grey screen
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
     }
   }
   
-  Future<void> _performInitialization() async {
-    // Skip identity sync on home screen - not critical
-    // Initialize welcome series (fast, local only)
+  Future<void> _performBackgroundSync() async {
     try {
+      // Initialize welcome series (local only, fast)
       await welcomeSeriesLocal.init();
       if (!welcomeSeriesLocal.hasStarted()) {
         await welcomeSeriesLocal.start();
@@ -78,10 +90,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       debugPrint('⚠️ Welcome series init failed: $e');
     }
     
-    // Refresh messages with SHORT timeout
+    // Sync messages from server (with timeout)
     await _refreshMessages();
     
-    // Check for brief and welcome day (non-blocking)
+    // Check for modals (after UI is rendered)
     _checkForMorningBrief();
     _checkForWelcomeDay();
     _loadUnreadCount();
@@ -101,27 +113,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     }
   }
 
-  // Removed didChangeDependencies to prevent excessive refreshes
-
   Future<void> _refreshMessages() async {
     try {
       debugPrint('🔄 Refreshing messages...');
       
-      // Ensure messages service is initialized (init() is safe to call multiple times)
-      await messagesService.init();
-      
-      // Get real user ID instead of hardcoded test user
+      // Get real user ID
       final userId = api.ApiClient.userId;
       if (userId == null) {
         debugPrint('❌ No authenticated user - cannot sync messages');
         return;
       }
       
-      // Add SHORT timeout to prevent hanging
+      // Sync with timeout
       await messagesService.syncMessages(userId).timeout(
-        const Duration(seconds: 2),
+        const Duration(seconds: 3),
         onTimeout: () {
-          debugPrint('⚠️ Message sync timed out after 2s - using cached messages');
+          debugPrint('⚠️ Message sync timed out after 3s - using cached messages');
           return false;
         },
       );
@@ -134,11 +141,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     } catch (e, stackTrace) {
       debugPrint('❌ Error refreshing messages: $e');
       debugPrint('Stack trace: $stackTrace');
-      // Always ensure UI updates even on error to prevent grey screen
+      // Always ensure UI updates even on error
       if (mounted) {
-        setState(() {
-          debugPrint('⚠️ UI updated despite error to prevent grey screen');
-        });
+        setState(() {});
       }
     }
   }
@@ -216,10 +221,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     } catch (e, stackTrace) {
       debugPrint('❌ Welcome series check failed: $e');
       debugPrint('Stack trace: $stackTrace');
-      // Don't crash the app - just log the error
-      if (mounted) {
-        setState(() {});
-      }
     }
   }
 
@@ -282,6 +283,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
 
   @override
   Widget build(BuildContext context) {
+    // Show loading state while initializing (prevents grey screen)
+    if (!_isInitialized) {
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                color: AppColors.emerald,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                'Loading...',
+                style: AppTextStyles.body.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
     final habitEngine = ref.watch(habitEngineProvider);
     final allHabits = habitEngine.habits;
     
@@ -520,12 +545,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                 ),
               ),
             
-            // ✅ REMOVED FOR NOW - Week Overview Card (saved for future version)
-            // const SizedBox(height: AppSpacing.xl),
-            // WeekOverviewCard(
-            //   stats: WeeklyStatsService.calculateCurrentWeekStats(),
-            // ),
-            
             // Bottom padding for nav bar (extra space for breathing room)
             const SizedBox(height: 150),
           ],
@@ -533,8 +552,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       ),
     );
   }
-  
-  // OLD _buildSystemCard removed - now using SystemCard widget from lib/widgets/system_card.dart
   
   Widget _buildReactHabitCard({
     required dynamic habit,
@@ -722,85 +739,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     ).animate(delay: (index * 30).ms)
       .fadeIn(duration: 260.ms)
       .scale(begin: const Offset(0.98, 0.98), end: const Offset(1, 1));
-  }
-  
-  Widget _buildProgressBar({
-    required double progress,
-    required String label,
-    required Color color,
-    required String description,
-  }) {
-    final clampedProgress = progress.clamp(0.0, 100.0);
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: AppTextStyles.captionSmall.copyWith(
-                color: AppColors.textTertiary,
-              ),
-            ),
-            Text(
-              '${clampedProgress.toInt()}%',
-              style: AppTextStyles.captionSmall.copyWith(
-                color: AppColors.textTertiary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Container(
-          height: 12,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppBorderRadius.full),
-            color: AppColors.glassBackground,
-            border: Border.all(
-              color: AppColors.glassBorder,
-              width: 1,
-            ),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppBorderRadius.full),
-            child: Stack(
-              children: [
-                Container(
-                  width: double.infinity,
-                  height: double.infinity,
-                  color: Colors.transparent,
-                ),
-                FractionallySizedBox(
-                  widthFactor: clampedProgress / 100,
-                  child: Container(
-                    height: double.infinity,
-                    decoration: BoxDecoration(
-                      gradient: label.contains('Fulfillment') 
-                          ? AppColors.emeraldGradient 
-                          : LinearGradient(
-                              colors: [color, color.withOpacity(0.8)],
-                            ),
-                      borderRadius: BorderRadius.circular(AppBorderRadius.full),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          description,
-          style: AppTextStyles.label.copyWith(
-            color: AppColors.textQuaternary,
-          ),
-        ),
-      ],
-    );
   }
 
   // ✅ NEW: Header matching planner style with brain logo in emerald
