@@ -57,20 +57,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       // Step 2: Load initial unread count (fast, synchronous)
       _unreadCount = messagesService.getUnreadCount();
       
-      // Step 3: NOW render UI with initialized data
+      // Step 3: Set initialized flag synchronously - no setState yet
+      _isInitialized = true;
+      
+      // Step 4: Do ONE setState to show UI
       if (mounted) {
-        setState(() {
-          _isInitialized = true;
-        });
+        setState(() {});
       }
       
-      // Step 4: Background sync (non-blocking)
-      _performBackgroundSync();
+      // Step 5: NOW do background sync WITHOUT setState calls
+      await _performBackgroundSyncSilently();
       
     } catch (e, stackTrace) {
       debugPrint('❌ Error initializing home screen: $e');
       debugPrint('Stack trace: $stackTrace');
-      // Always show UI even on error to prevent grey screen
       if (mounted) {
         setState(() {
           _isInitialized = true;
@@ -79,6 +79,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     }
   }
   
+  // NEW: Silent sync that doesn't call setState during initial load
+  Future<void> _performBackgroundSyncSilently() async {
+    try {
+      // Initialize welcome series (local only, fast)
+      await welcomeSeriesLocal.init();
+      if (!welcomeSeriesLocal.hasStarted()) {
+        await welcomeSeriesLocal.start();
+      }
+    } catch (e) {
+      debugPrint('⚠️ Welcome series init failed: $e');
+    }
+    
+    // Sync messages from server (with timeout) - NO setState
+    await _refreshMessagesSilently();
+    
+    // Check for modals (after UI is rendered)
+    _checkForMorningBrief();
+    _checkForWelcomeDay();
+    _loadUnreadCount();
+  }
+  
+  // Keep the old _performBackgroundSync for app resume (calls setState)
   Future<void> _performBackgroundSync() async {
     try {
       // Initialize welcome series (local only, fast)
@@ -113,6 +135,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     }
   }
 
+  // NEW: Silent refresh that doesn't trigger setState on first load
+  Future<void> _refreshMessagesSilently() async {
+    try {
+      debugPrint('🔄 Refreshing messages silently...');
+      
+      final userId = api.ApiClient.userId;
+      if (userId == null) {
+        debugPrint('❌ No authenticated user - cannot sync messages');
+        return;
+      }
+      
+      await messagesService.syncMessages(userId).timeout(
+        const Duration(seconds: 3),
+        onTimeout: () {
+          debugPrint('⚠️ Message sync timed out after 3s - using cached messages');
+          return false;
+        },
+      );
+      
+      // Only setState if we got new data AND UI is already showing
+      if (mounted && _isInitialized) {
+        setState(() {
+          debugPrint('✅ Messages refreshed silently, updating UI');
+        });
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error refreshing messages: $e');
+      debugPrint('Stack trace: $stackTrace');
+    }
+  }
+  
+  // Keep the existing _refreshMessages for manual refreshes (like app resume)
   Future<void> _refreshMessages() async {
     try {
       debugPrint('🔄 Refreshing messages...');
