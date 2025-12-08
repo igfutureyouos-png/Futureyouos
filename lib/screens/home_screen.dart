@@ -65,12 +65,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
         setState(() {});
       }
       
-      // Step 5: NOW do background sync WITHOUT setState calls
+      // Step 5: NOW do background sync WITHOUT multiple setState calls
       await _performBackgroundSyncSilently();
       
     } catch (e, stackTrace) {
       debugPrint('❌ Error initializing home screen: $e');
       debugPrint('Stack trace: $stackTrace');
+      // Always show UI even on error to prevent grey screen
       if (mounted) {
         setState(() {
           _isInitialized = true;
@@ -79,7 +80,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     }
   }
   
-  // NEW: Silent sync that doesn't call setState during initial load
   Future<void> _performBackgroundSyncSilently() async {
     try {
       // Initialize welcome series (local only, fast)
@@ -87,58 +87,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       if (!welcomeSeriesLocal.hasStarted()) {
         await welcomeSeriesLocal.start();
       }
-    } catch (e) {
-      debugPrint('⚠️ Welcome series init failed: $e');
-    }
-    
-    // Sync messages from server (with timeout) - NO setState
-    await _refreshMessagesSilently();
-    
-    // Check for modals (after UI is rendered)
-    _checkForMorningBrief();
-    _checkForWelcomeDay();
-    _loadUnreadCount();
-  }
-  
-  // Keep the old _performBackgroundSync for app resume (calls setState)
-  Future<void> _performBackgroundSync() async {
-    try {
-      // Initialize welcome series (local only, fast)
-      await welcomeSeriesLocal.init();
-      if (!welcomeSeriesLocal.hasStarted()) {
-        await welcomeSeriesLocal.start();
+      
+      // ✅ FIX: Save welcome message to messagesService BEFORE checking UI
+      if (welcomeSeriesLocal.shouldShowToday()) {
+        final dayContent = welcomeSeriesLocal.getTodaysContent();
+        if (dayContent != null) {
+          final message = welcomeSeriesLocal.welcomeDayToMessage(dayContent);
+          await messagesService.saveLocalMessage(message);
+          debugPrint('✅ Saved welcome day message to messagesService');
+        }
       }
     } catch (e) {
       debugPrint('⚠️ Welcome series init failed: $e');
     }
     
-    // Sync messages from server (with timeout)
-    await _refreshMessages();
+    // Sync messages from server (with timeout) - NO setState during initial load
+    await _refreshMessagesSilently();
     
-    // Check for modals (after UI is rendered)
+    // Check for modals (after UI is rendered and messages are saved)
     _checkForMorningBrief();
     _checkForWelcomeDay();
     _loadUnreadCount();
   }
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      // App came to foreground, refresh messages
-      _refreshMessages();
-    }
-  }
-
   // NEW: Silent refresh that doesn't trigger setState on first load
   Future<void> _refreshMessagesSilently() async {
     try {
-      debugPrint('🔄 Refreshing messages silently...');
+      debugPrint('🔄 Refreshing messages...');
       
       final userId = api.ApiClient.userId;
       if (userId == null) {
@@ -157,7 +132,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       // Only setState if we got new data AND UI is already showing
       if (mounted && _isInitialized) {
         setState(() {
-          debugPrint('✅ Messages refreshed silently, updating UI');
+          debugPrint('✅ Messages refreshed, updating UI');
         });
       }
     } catch (e, stackTrace) {
@@ -165,8 +140,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       debugPrint('Stack trace: $stackTrace');
     }
   }
-  
-  // Keep the existing _refreshMessages for manual refreshes (like app resume)
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // App came to foreground, refresh messages
+      _refreshMessages();
+    }
+  }
+
   Future<void> _refreshMessages() async {
     try {
       debugPrint('🔄 Refreshing messages...');
@@ -292,11 +280,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
           content: dayContent.body,
           onContinue: () async {
             try {
-              // Save welcome message to reflections tab
-              final message = welcomeSeriesLocal.welcomeDayToMessage(dayContent);
-              await messagesService.saveLocalMessage(message);
-              
-              // Mark day as complete
+              // ✅ FIX: Message already saved in _performBackgroundSyncSilently
+              // Just mark it as read and complete the day
+              final messageId = 'welcome_day_${dayContent.day}';
+              await messagesService.markAsRead(messageId);
               await welcomeSeriesLocal.markDayComplete();
               
               if (mounted) {
