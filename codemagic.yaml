@@ -7,7 +7,7 @@ workflows:
     environment:
       ios_signing:
         distribution_type: app_store # or: ad_hoc, development, enterprise
-        bundle_identifier: com.futureyou.futureyouos
+        bundle_identifier: com.futureyou.os
       
       vars:
         XCODE_WORKSPACE: "Runner.xcworkspace"

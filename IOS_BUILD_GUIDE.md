@@ -10,7 +10,7 @@
 2. Select your "Future You" project
 3. Click ⚙️ Settings → Project Settings
 4. Under "Your apps", find or add iOS app
-5. **Bundle ID MUST be:** `com.futureyou.futureyouos`
+5. **Bundle ID MUST be:** `com.futureyou.os`
 6. Download `GoogleService-Info.plist`
 7. Save it to: `ios/Runner/GoogleService-Info.plist`
 8. Commit and push to your repo
@@ -32,7 +32,7 @@ You need an **Apple Developer Account** ($99/year)
 3. Create App ID:
    - Go to Certificates, Identifiers & Profiles
    - Click Identifiers → +
-   - Bundle ID: `com.futureyou.futureyouos`
+   - Bundle ID: `com.futureyou.os`
    - Name: `Future You OS`
    - Enable capabilities: Push Notifications, Sign in with Apple
 
@@ -44,7 +44,7 @@ You need an **Apple Developer Account** ($99/year)
 2. Click "My Apps" → + → New App
 3. Fill in:
    - **Name:** Future You OS
-   - **Bundle ID:** com.futureyou.futureyouos
+   - **Bundle ID:** com.futureyou.os
    - **SKU:** FUTUREYOUOS (or any unique identifier)
 4. Create app
 
