@@ -25,8 +25,8 @@ android {
         applicationId = "com.futureyou.futureyouos"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = 3
-        versionName = "3.0.0"
+        versionCode = 400
+        versionName = "400"
         multiDexEnabled = true
 
         // ✅ FIXED — Kotlin DSL syntax
