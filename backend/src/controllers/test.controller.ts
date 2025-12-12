@@ -4,6 +4,7 @@ import { prisma } from '../utils/db';
 import { aiService } from '../services/ai.service';
 import { notificationsService } from '../services/notifications.service';
 import { schedulerQueue } from '../jobs/scheduler';
+import { coachMessageService } from '../services/coach-message.service';
 
 function getUserIdOr401(req: any): string {
   const uid = req?.user?.id || req.headers['x-user-id'];
@@ -57,12 +58,11 @@ export async function testController(fastify: FastifyInstance) {
       // ✅ Use the REAL consciousness system (same as scheduler)
       const text = await aiService.generateMorningBrief(userId);
 
-      const event = await prisma.event.create({
-        data: { userId, type: 'morning_brief', payload: { text } },
-      });
+      // Create CoachMessage instead of Event
+      const message = await coachMessageService.createMessage(userId, 'brief', text, { source: 'test' });
 
       console.log(`✅ Test morning brief generated for ${userId}`);
-      return { ok: true, message: text, id: event.id };
+      return { ok: true, message: text, id: message.id };
     } catch (err: any) {
       const code = err.statusCode || 500;
       return reply.code(code).send({ error: err.message });
@@ -83,12 +83,11 @@ export async function testController(fastify: FastifyInstance) {
       // ✅ Use the REAL consciousness system (same as scheduler)
       const text = await aiService.generateEveningDebrief(userId);
 
-      const event = await prisma.event.create({
-        data: { userId, type: 'evening_debrief', payload: { text } },
-      });
+      // Create CoachMessage instead of Event (using 'mirror' kind for debrief)
+      const message = await coachMessageService.createMessage(userId, 'mirror', text, { source: 'test' });
 
       console.log(`✅ Test evening debrief generated for ${userId}`);
-      return { ok: true, message: text, id: event.id };
+      return { ok: true, message: text, id: message.id };
     } catch (err: any) {
       const code = err.statusCode || 500;
       return reply.code(code).send({ error: err.message });
@@ -111,12 +110,11 @@ export async function testController(fastify: FastifyInstance) {
       // ✅ Use the REAL consciousness system (same as scheduler)
       const text = await aiService.generateNudge(userId, reason);
 
-      const event = await prisma.event.create({ 
-        data: { userId, type: 'nudge', payload: { text, reason } } 
-      });
+      // Create CoachMessage instead of Event
+      const message = await coachMessageService.createMessage(userId, 'nudge', text, { source: 'test', reason });
 
       console.log(`✅ Test nudge generated for ${userId}`);
-      return { ok: true, message: text, id: event.id };
+      return { ok: true, message: text, id: message.id };
     } catch (err: any) {
       const code = err.statusCode || 500;
       return reply.code(code).send({ error: err.message });
@@ -157,9 +155,8 @@ export async function testController(fastify: FastifyInstance) {
         purpose: 'brief', 
         maxChars: 500 
       });
-      await prisma.event.create({
-        data: { userId, type: 'morning_brief', payload: { text: briefText } },
-      });
+      // Create CoachMessage instead of Event
+      await coachMessageService.createMessage(userId, 'brief', briefText, { source: 'test' });
 
       // 2. Generate evening debrief
       const kept = recent.filter(e => e.type === 'habit_action' && (e.payload as any)?.completed === true).length;
@@ -169,9 +166,8 @@ export async function testController(fastify: FastifyInstance) {
         purpose: 'debrief', 
         maxChars: 500 
       });
-      await prisma.event.create({
-        data: { userId, type: 'evening_debrief', payload: { text: debriefText } },
-      });
+      // Create CoachMessage instead of Event (using 'mirror' kind for debrief)
+      await coachMessageService.createMessage(userId, 'mirror', debriefText, { source: 'test' });
 
       // 3. Generate smart nudge
       const nudgeResult = await nudgesService.generateNudges(userId);
