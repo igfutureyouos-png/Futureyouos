@@ -193,12 +193,13 @@ async function ensureNudgeJobs() {
 }
 
 async function runDailyBrief(userId: string) {
-  // 🔒 PAYWALL: Only send briefs to premium users
-  const isPremium = await premiumService.isPremium(userId);
-  if (!isPremium) {
-    console.log(`⏭️ Skipping morning brief for free user: ${userId}`);
-    return { ok: true, skipped: true, reason: "not_premium" };
-  }
+  // 🔒 PAYWALL: Temporarily disabled for testing
+  // TODO: Re-enable before production launch
+  // const isPremium = await premiumService.isPremium(userId);
+  // if (!isPremium) {
+  //   console.log(`⏭️ Skipping morning brief for free user: ${userId}`);
+  //   return { ok: true, skipped: true, reason: "not_premium" };
+  // }
 
   // 🧠 AI OS v2: Use new coach engine with fallback to legacy
   let text: string;
@@ -231,12 +232,13 @@ async function runDailyBrief(userId: string) {
 }
 
 async function runEveningDebrief(userId: string) {
-  // 🔒 PAYWALL: Only send debriefs to premium users
-  const isPremium = await premiumService.isPremium(userId);
-  if (!isPremium) {
-    console.log(`⏭️ Skipping evening debrief for free user: ${userId}`);
-    return { ok: true, skipped: true, reason: "not_premium" };
-  }
+  // 🔒 PAYWALL: Temporarily disabled for testing
+  // TODO: Re-enable before production launch
+  // const isPremium = await premiumService.isPremium(userId);
+  // if (!isPremium) {
+  //   console.log(`⏭️ Skipping evening debrief for free user: ${userId}`);
+  //   return { ok: true, skipped: true, reason: "not_premium" };
+  // }
 
   // 🧠 AI OS v2: Use new coach engine with fallback to legacy
   let text: string;
