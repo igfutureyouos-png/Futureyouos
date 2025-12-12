@@ -44,6 +44,51 @@ export async function userController(fastify: FastifyInstance) {
         },
       });
 
+      // 🧠 Initialize UserFacts for AI OS brain
+      // This is CRITICAL - without this, the deep user model has no foundation
+      try {
+        await prisma.userFacts.create({
+          data: {
+            userId,
+            json: {
+              learnedModel: {
+                fingerprint: null,
+                shameSensitivity: null,
+                triggerChains: [],
+                messagePatterns: [],
+                commitments: [],
+                excuses: [],
+                narratives: [],
+                dataPointsUsed: 0,
+                confidenceLevel: "insufficient",
+                milestones: [],
+              },
+              behaviorPatterns: {
+                drift_windows: [],
+                consistency_score: 0,
+                avoidance_triggers: [],
+                return_protocols: [],
+              },
+              reflectionHistory: {
+                themes: [],
+                emotional_arc: "flat",
+                depth_score: 0,
+              },
+              os_phase: {
+                current_phase: "observer",
+                started_at: new Date().toISOString(),
+                days_in_phase: 0,
+                phase_transitions: [],
+              },
+            },
+          },
+        });
+        console.log(`🧠 UserFacts initialized for ${userId}`);
+      } catch (factsErr) {
+        // Don't fail user creation if UserFacts fails - it can be created later
+        console.warn(`⚠️ Failed to initialize UserFacts for ${userId}:`, factsErr);
+      }
+
       console.log(`✅ Created new user: ${userId}`);
       return { user, created: true };
     } catch (err: any) {

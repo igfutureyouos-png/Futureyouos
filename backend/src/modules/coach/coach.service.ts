@@ -7,6 +7,9 @@ export class CoachService {
   /**
    * 🔁 Sync habit + completion data (observer mode)
    * Logs habit completions as events for the AI brain to interpret.
+   * 
+   * CRITICAL: Events must include full streak data for the AI OS brain:
+   * - habitId, habitTitle, completed, streak, previousStreak, completedAt
    */
   async sync(
     userId: string,
@@ -16,15 +19,40 @@ export class CoachService {
     if (!userId) throw new Error("Missing userId");
 
     if (Array.isArray(completions) && completions.length > 0) {
-      const writes = completions.map((c) =>
-        prisma.event.create({
+      // Query all habits to get titles and current streaks
+      const userHabits = await prisma.habit.findMany({
+        where: { userId },
+        select: { id: true, title: true, streak: true },
+      });
+      
+      // Build a lookup map for quick access
+      const habitMap = new Map(userHabits.map(h => [h.id, h]));
+      
+      const writes = completions.map((c) => {
+        const habit = habitMap.get(c.habitId);
+        const currentStreak = habit?.streak ?? 0;
+        
+        // Calculate what the streak will be after this action
+        // If completing: streak goes up by 1
+        // If uncompleting: streak resets to 0 (previousStreak preserves old value)
+        const newStreak = c.done ? currentStreak + 1 : 0;
+        
+        return prisma.event.create({
           data: {
             userId,
             type: "habit_action",
-            payload: { habitId: c.habitId, date: c.date, completed: c.done },
+            payload: {
+              habitId: c.habitId,
+              habitTitle: habit?.title || "Unknown Habit",
+              completed: c.done,
+              streak: newStreak,
+              previousStreak: currentStreak,
+              completedAt: new Date().toISOString(),
+              scheduledTime: null, // Could be enhanced later if schedule data is passed
+            },
           },
-        })
-      );
+        });
+      });
       await Promise.allSettled(writes);
     }
 

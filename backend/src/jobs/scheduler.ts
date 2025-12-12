@@ -5,6 +5,7 @@ import { Queue, Worker, JobsOptions } from "bullmq";
 import { redis } from "../utils/redis";
 import { prisma } from "../utils/db";
 import { aiService } from "../services/ai.service";
+import { aiServiceV2 } from "../services/ai.service.v2";
 import { coachMessageService } from "../services/coach-message.service";
 import { notificationsService } from "../services/notifications.service";
 import { voiceService } from "../services/voice.service";
@@ -59,6 +60,16 @@ export async function bootstrapSchedulers() {
     removeOnComplete: true,
     removeOnFail: true,
   });
+
+  // 🧠 Pattern learning (3am daily) - CRITICAL for AI OS brain
+  // This job computes behavioral fingerprints, shame sensitivity, trigger chains
+  // Without this, the AI never learns the user's patterns
+  await schedulerQueue.add("pattern-learning", {}, {
+    repeat: { pattern: "0 3 * * *" }, // 3am daily
+    removeOnComplete: true,
+    removeOnFail: true,
+  });
+  console.log("🧠 Pattern learning job scheduled (3am daily)");
 }
 
 // ─────────────────────────────────────────────
@@ -189,9 +200,16 @@ async function runDailyBrief(userId: string) {
     return { ok: true, skipped: true, reason: "not_premium" };
   }
 
-  const text =
-    (await aiService.generateMorningBrief(userId).catch(() => null)) ||
-    "Good morning.";
+  // 🧠 AI OS v2: Use new coach engine with fallback to legacy
+  let text: string;
+  try {
+    console.log(`🧠 [AI OS v2] Generating morning brief for ${userId}...`);
+    text = await aiServiceV2.generateMorningBrief(userId);
+    console.log(`✅ [AI OS v2] Morning brief generated successfully`);
+  } catch (err) {
+    console.warn(`⚠️ [AI OS v2] Failed, falling back to legacy:`, err);
+    text = await aiService.generateMorningBrief(userId).catch(() => "Good morning.");
+  }
 
   let audioUrl: string | null = null;
   try {
@@ -220,9 +238,16 @@ async function runEveningDebrief(userId: string) {
     return { ok: true, skipped: true, reason: "not_premium" };
   }
 
-  const text =
-    (await aiService.generateEveningDebrief(userId).catch(() => null)) ||
-    "Evening debrief.";
+  // 🧠 AI OS v2: Use new coach engine with fallback to legacy
+  let text: string;
+  try {
+    console.log(`🧠 [AI OS v2] Generating evening debrief for ${userId}...`);
+    text = await aiServiceV2.generateEveningDebrief(userId);
+    console.log(`✅ [AI OS v2] Evening debrief generated successfully`);
+  } catch (err) {
+    console.warn(`⚠️ [AI OS v2] Failed, falling back to legacy:`, err);
+    text = await aiService.generateEveningDebrief(userId).catch(() => "Evening debrief.");
+  }
 
   let audioUrl: string | null = null;
   try {
@@ -278,9 +303,16 @@ async function runNudge(userId: string, trigger: string) {
     return { ok: true, skipped: true, reason: "duplicate_prevention" };
   }
   
-  const text =
-    (await aiService.generateNudge(userId, trigger).catch(() => null)) ||
-    "Check in with yourself.";
+  // 🧠 AI OS v2: Use new coach engine with fallback to legacy
+  let text: string;
+  try {
+    console.log(`🧠 [AI OS v2] Generating nudge for ${userId} (trigger: ${trigger})...`);
+    text = await aiServiceV2.generateNudge(userId, trigger);
+    console.log(`✅ [AI OS v2] Nudge generated successfully`);
+  } catch (err) {
+    console.warn(`⚠️ [AI OS v2] Failed, falling back to legacy:`, err);
+    text = await aiService.generateNudge(userId, trigger).catch(() => "Check in with yourself.");
+  }
 
   console.log(`📝 Generated nudge text: "${text.substring(0, 80)}..."`);
 
@@ -323,6 +355,40 @@ async function autoNudgesHourly() {
     );
   }
   return { ok: true };
+}
+
+/**
+ * 🧠 PATTERN LEARNING - Nightly job that makes the AI OS brain actually learn
+ * 
+ * This computes:
+ * - Behavioral fingerprints (recovery style, challenge response, celebration trap)
+ * - Shame sensitivity scores
+ * - Trigger chains (sequences that lead to slips)
+ * - Message effectiveness patterns
+ * 
+ * WITHOUT THIS JOB, THE AI NEVER LEARNS USER PATTERNS.
+ */
+async function runPatternLearning() {
+  console.log(`🧠 ================================`);
+  console.log(`🧠 PATTERN LEARNING STARTING at ${new Date().toISOString()}`);
+  console.log(`🧠 ================================\n`);
+  
+  try {
+    // Dynamic import to avoid circular dependencies
+    const { patternLearningWorker } = await import("../workers/pattern-learning.worker");
+    const result = await patternLearningWorker.processAllUsers();
+    
+    console.log(`\n🧠 ================================`);
+    console.log(`🧠 PATTERN LEARNING COMPLETE`);
+    console.log(`🧠 Processed: ${result.processed} users`);
+    console.log(`🧠 Errors: ${result.errors}`);
+    console.log(`🧠 ================================\n`);
+    
+    return result;
+  } catch (err) {
+    console.error(`❌ Pattern learning failed:`, err);
+    return { processed: 0, errors: 1 };
+  }
 }
 
 async function runWeeklyConsolidation() {
@@ -403,6 +469,9 @@ export function startWorker() {
         // REMOVED: auto-nudges-hourly case - no longer used
         case "weekly-consolidation":
           return runWeeklyConsolidation();
+        case "pattern-learning":
+          console.log(`🧠 WORKER starting pattern learning job...`);
+          return runPatternLearning();
         default:
           return;
       }
