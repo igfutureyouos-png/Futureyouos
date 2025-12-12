@@ -26,6 +26,7 @@ class PlannerScreen extends ConsumerStatefulWidget {
 
 class _PlannerScreenState extends ConsumerState<PlannerScreen>
     with SingleTickerProviderStateMixin {
+  bool _isInitialized = false;
   DateTime _selectedDate = DateTime.now();
   DateTime _startDate = DateTime.now();
   DateTime _endDate = DateTime.now();
@@ -62,6 +63,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
   @override
   void initState() {
     super.initState();
+    _initializeScreen();
     // Start on Manage tab by default
     _tabController = TabController(length: 3, vsync: this, initialIndex: 1);
     _onTypeChanged(_selectedType);
@@ -69,6 +71,23 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
     _addSystemHabitField();
     _addSystemHabitField();
     _addSystemHabitField();
+  }
+
+  Future<void> _initializeScreen() async {
+    try {
+      // Load habits from cache (should be fast)
+      await ref.read(habitEngineProvider).loadHabits();
+      
+      if (mounted) {
+        setState(() => _isInitialized = true);
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error initializing planner: $e');
+      // Always show UI even on error to prevent grey screen
+      if (mounted) {
+        setState(() => _isInitialized = true);
+      }
+    }
   }
 
   void _addSystemHabitField() {
@@ -308,6 +327,30 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Show loading state while initializing (prevents grey screen)
+    if (!_isInitialized) {
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                color: const Color(0xFFFF6B35),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                'Loading...',
+                style: AppTextStyles.body.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(

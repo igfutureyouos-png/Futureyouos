@@ -51,21 +51,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
 
   Future<void> _initializeScreen() async {
     try {
-      // Step 1: Initialize messages service FIRST (critical for UI)
-      await messagesService.init();
+      // messagesService already initialized in main.dart, skip redundant init
       
-      // Step 2: Load initial unread count (fast, synchronous)
+      // Load initial unread count from cache (fast, synchronous)
       _unreadCount = messagesService.getUnreadCount();
       
-      // Step 3: Set initialized flag synchronously - no setState yet
+      // Set initialized flag immediately
       _isInitialized = true;
       
-      // Step 4: Do ONE setState to show UI
+      // Show UI immediately with cached data
       if (mounted) {
         setState(() {});
       }
       
-      // Step 5: NOW do background sync WITHOUT multiple setState calls
+      // NOW do background sync WITHOUT blocking UI
       await _performBackgroundSyncSilently();
       
     } catch (e, stackTrace) {

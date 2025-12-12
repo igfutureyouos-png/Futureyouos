@@ -93,8 +93,10 @@ Future<void> main() async {
       await messagesService.init();
       debugPrint('✅ Hive initialized');
       
-      // Initialize sync service (Phase 4)
-      await syncService.init();
+      // Initialize sync service in background (non-blocking to prevent grey screens)
+      syncService.init().catchError((e) {
+        debugPrint('❌ Sync initialization failed: $e');
+      });
     } catch (e) {
       debugPrint('❌ Hive/Sync initialization failed: $e');
       // Don't throw - let app run with degraded functionality
@@ -173,11 +175,35 @@ class _AppRouterState extends State<AppRouter> {
   bool _isAuthenticated = false;
   bool _isLoading = true;
   String _errorMessage = '';
+  StreamSubscription<User?>? _authStateSubscription;
 
   @override
   void initState() {
     super.initState();
     _checkAppState();
+    _listenToAuthChanges();
+  }
+
+  @override
+  void dispose() {
+    _authStateSubscription?.cancel();
+    super.dispose();
+  }
+
+  // Listen to Firebase auth state changes for automatic navigation
+  void _listenToAuthChanges() {
+    try {
+      _authStateSubscription = FirebaseAuth.instance.authStateChanges().listen((User? user) {
+        debugPrint('🔄 Auth state changed: ${user?.uid ?? "null"}');
+        if (mounted) {
+          setState(() {
+            _isAuthenticated = user != null;
+          });
+        }
+      });
+    } catch (e) {
+      debugPrint('⚠️ Could not listen to auth changes: $e');
+    }
   }
 
   Future<void> _checkAppState() async {

@@ -32,10 +32,19 @@ class AuthService {
       // Update display name
       await userCredential.user?.updateDisplayName(name);
 
-      // Register user with backend
-      await _registerWithBackend(name: name, email: email);
-
       debugPrint('✅ User created: ${userCredential.user?.uid}');
+
+      // Wait a moment for Firebase user to fully initialize
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Register user with backend
+      try {
+        await _registerWithBackend(name: name, email: email);
+      } catch (backendError) {
+        debugPrint('⚠️ Backend registration failed, but Firebase auth succeeded: $backendError');
+        // Don't throw - user is authenticated in Firebase, backend can sync later
+      }
+
       return userCredential;
     } on FirebaseAuthException catch (e) {
       debugPrint('❌ Sign up error: ${e.code} - ${e.message}');
@@ -58,6 +67,10 @@ class AuthService {
       );
 
       debugPrint('✅ User signed in: ${userCredential.user?.uid}');
+      
+      // Wait a moment for Firebase user to fully initialize
+      await Future.delayed(const Duration(milliseconds: 500));
+      
       return userCredential;
     } on FirebaseAuthException catch (e) {
       debugPrint('❌ Sign in error: ${e.code} - ${e.message}');
@@ -91,22 +104,39 @@ class AuthService {
       // Sign in to Firebase
       final UserCredential userCredential = await _auth.signInWithCredential(credential);
 
-      // Check if this is a new user
+      debugPrint('✅ Firebase sign-in successful: ${userCredential.user?.uid}');
+
+      // Wait a moment for Firebase user to fully initialize
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Check if this is a new user and register with backend
       if (userCredential.additionalUserInfo?.isNewUser ?? false) {
-        // Register with backend
-        await _registerWithBackend(
-          name: userCredential.user?.displayName ?? 'User',
-          email: userCredential.user?.email ?? '',
-        );
+        debugPrint('🆕 New user detected, registering with backend...');
+        try {
+          await _registerWithBackend(
+            name: userCredential.user?.displayName ?? 'User',
+            email: userCredential.user?.email ?? '',
+          );
+        } catch (backendError) {
+          debugPrint('⚠️ Backend registration failed, but Firebase auth succeeded: $backendError');
+          // Don't throw - user is authenticated in Firebase, backend can sync later
+        }
+      } else {
+        debugPrint('👤 Existing user signed in');
       }
 
-      debugPrint('✅ Google sign-in successful: ${userCredential.user?.uid}');
       return userCredential;
     } on FirebaseAuthException catch (e) {
-      debugPrint('❌ Google sign-in error: ${e.code} - ${e.message}');
+      debugPrint('❌ Google sign-in Firebase error: ${e.code} - ${e.message}');
       throw _handleAuthException(e);
     } catch (e) {
       debugPrint('❌ Google sign-in error: $e');
+      // Provide more specific error message
+      if (e.toString().contains('network')) {
+        throw Exception('Network error. Please check your internet connection and try again.');
+      } else if (e.toString().contains('INTERNAL_ERROR')) {
+        throw Exception('Google Sign-In configuration error. Please try email sign-in or contact support.');
+      }
       rethrow;
     }
   }
@@ -135,25 +165,37 @@ class AuthService {
       // Sign in to Firebase
       final UserCredential userCredential = await _auth.signInWithCredential(oAuthCredential);
 
-      // Check if this is a new user
+      debugPrint('✅ Firebase sign-in successful: ${userCredential.user?.uid}');
+
+      // Wait a moment for Firebase user to fully initialize
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Check if this is a new user and register with backend
       if (userCredential.additionalUserInfo?.isNewUser ?? false) {
+        debugPrint('🆕 New user detected, registering with backend...');
+        
         // Build name from Apple credential
         String name = 'User';
         if (appleCredential.givenName != null || appleCredential.familyName != null) {
           name = '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'.trim();
         }
 
-        // Register with backend
-        await _registerWithBackend(
-          name: name.isEmpty ? 'User' : name,
-          email: userCredential.user?.email ?? appleCredential.email ?? '',
-        );
+        try {
+          await _registerWithBackend(
+            name: name.isEmpty ? 'User' : name,
+            email: userCredential.user?.email ?? appleCredential.email ?? '',
+          );
+        } catch (backendError) {
+          debugPrint('⚠️ Backend registration failed, but Firebase auth succeeded: $backendError');
+          // Don't throw - user is authenticated in Firebase, backend can sync later
+        }
+      } else {
+        debugPrint('👤 Existing user signed in');
       }
 
-      debugPrint('✅ Apple sign-in successful: ${userCredential.user?.uid}');
       return userCredential;
     } on FirebaseAuthException catch (e) {
-      debugPrint('❌ Apple sign-in error: ${e.code} - ${e.message}');
+      debugPrint('❌ Apple sign-in Firebase error: ${e.code} - ${e.message}');
       throw _handleAuthException(e);
     } catch (e) {
       debugPrint('❌ Apple sign-in error: $e');

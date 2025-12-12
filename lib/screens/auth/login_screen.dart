@@ -57,19 +57,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       );
 
       if (mounted) {
-        // Wait for initial sync before navigating
-        await _initializeAfterLogin();
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Signed in successfully!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
         
+        // Wait for initial sync before navigating
+        try {
+          await _initializeAfterLogin();
+        } catch (syncError) {
+          debugPrint('⚠️ Sync failed but continuing: $syncError');
+          // Don't block navigation if sync fails
+        }
+        
+        // Navigation happens automatically via auth state listener in main.dart
+        // But we can force it here too for immediate feedback
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const MainScreen()),
         );
       }
     } catch (e) {
       if (mounted) {
+        // Clean up the error message
+        String errorMessage = e.toString().replaceAll('Exception:', '').trim();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()),
+            content: Text(errorMessage),
             backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -98,19 +118,50 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final result = await authService.signInWithGoogle();
 
       if (result != null && mounted) {
-        // Wait for initial sync before navigating
-        await _initializeAfterLogin();
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Signed in successfully!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
         
+        // Wait for initial sync before navigating
+        try {
+          await _initializeAfterLogin();
+        } catch (syncError) {
+          debugPrint('⚠️ Sync failed but continuing: $syncError');
+          // Don't block navigation if sync fails
+        }
+        
+        // Navigation happens automatically via auth state listener in main.dart
+        // But we can force it here too for immediate feedback
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const MainScreen()),
         );
+      } else {
+        // User cancelled sign-in
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     } catch (e) {
       if (mounted) {
+        // Clean up the error message
+        String errorMessage = e.toString().replaceAll('Exception:', '').trim();
+        
+        // Make error messages more user-friendly
+        if (errorMessage.toLowerCase().contains('api error') || 
+            errorMessage.toLowerCase().contains('backend')) {
+          errorMessage = 'Signed in successfully, but backend connection failed. Your data will sync later.';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: AppColors.error,
+            content: Text(errorMessage),
+            backgroundColor: errorMessage.contains('successfully') ? Colors.orange : AppColors.error,
+            duration: const Duration(seconds: 4),
           ),
         );
       }

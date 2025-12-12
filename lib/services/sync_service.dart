@@ -97,8 +97,7 @@ class SyncService {
     });
     debugPrint('✓ Started periodic message sync (${_messageSyncInterval.inMinutes}min interval)');
     
-    // Also sync immediately on start
-    syncMessages();
+    // Don't sync immediately - let screens control when to sync to prevent blocking UI
   }
 
   /// Stop periodic sync
