@@ -1,0 +1,67 @@
+name: Build Flutter AAB - Final
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.6'
+          channel: stable
+
+      - name: Write local.properties
+        run: |
+          mkdir -p android
+          FLUTTER_SDK=$(dirname "$(dirname "$(which flutter)")")
+          echo "flutter.sdk=$FLUTTER_SDK" > android/local.properties
+          echo "sdk.dir=$ANDROID_SDK_ROOT" >> android/local.properties
+
+      - name: Precache Flutter engine
+        run: flutter precache --android --force
+
+      - name: flutter pub get
+        run: flutter pub get
+
+      - name: Verify keystore
+        run: |
+          set -e
+          echo "Using keystore from repo: android/app/upload-keystore.jks"
+          ls -l android/app/upload-keystore.jks
+          echo "Getting SHA-1 fingerprint:"
+          keytool -list -v -keystore android/app/upload-keystore.jks -alias upload -storepass pass123 -keypass pass123 | grep "SHA1:"
+          echo "KEY_ALIAS=upload" >> $GITHUB_ENV
+          echo "STORE_PASSWORD=pass123" >> $GITHUB_ENV
+          echo "KEY_PASSWORD=pass123" >> $GITHUB_ENV
+
+      - name: Build signed AAB
+        run: |
+          flutter build appbundle --release --build-number $GITHUB_RUN_NUMBER --no-tree-shake-icons
+
+      - name: Upload artifact (primary path)
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: warn
+
+      - name: Upload artifact (fallback path)
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-aab-fallback
+          path: build/app/outputs/bundle/*/app-*.aab
+          if-no-files-found: ignore
