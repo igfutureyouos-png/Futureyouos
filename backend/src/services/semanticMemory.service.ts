@@ -144,7 +144,10 @@ export class SemanticMemoryService {
         metadatas: [metadata],
       });
 
-      console.log(`✅ [SemanticMemory] Stored ${params.type} memory for user ${params.userId.substring(0, 8)}`);
+      console.log(`📌 CHROMA UPSERT - Stored ${params.type} memory for user ${params.userId.substring(0, 8)}`);
+      console.log(`   Collection: ${collectionName}`);
+      console.log(`   Text preview: "${params.text.substring(0, 80)}..."`);
+      console.log(`   Metadata: ${JSON.stringify(metadata)}`);
     } catch (err) {
       console.warn(`⚠️ Failed to store semantic memory:`, err);
     }
@@ -208,7 +211,10 @@ export class SemanticMemoryService {
         });
       }
 
-      console.log(`✅ [SemanticMemory] Queried ${memories.length} memories for user ${params.userId.substring(0, 8)}`);
+      console.log(`🔎 CHROMA QUERY got: ${memories.length} memories for user ${params.userId.substring(0, 8)}`);
+      console.log(`   Query: "${params.query.substring(0, 80)}..."`);
+      console.log(`   Type filter: ${params.type || 'all'}`);
+      console.log(`   Results preview: ${memories.slice(0, 2).map(m => `"${m.text.substring(0, 50)}..." (score: ${m.score.toFixed(2)})`).join(', ')}`);
       return memories;
     } catch (err) {
       console.warn(`⚠️ Failed to query semantic memories:`, err);

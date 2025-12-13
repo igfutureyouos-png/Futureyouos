@@ -32,8 +32,10 @@ class AIServiceV2 {
    * Returns just the text string for backwards compatibility.
    */
   async generateMorningBrief(userId: string): Promise<string> {
+    console.log(`🧠 V2 HIT - generateMorningBrief for ${userId.substring(0, 8)}...`);
     try {
       const result = await coachEngine.generateBrief(userId);
+      console.log(`✅ V2 SUCCESS - Brief generated with authority: ${result.metadata.authority}, state: ${result.metadata.executionState}`);
       
       // Store in semantic memory (for backwards compat with existing system)
       await this.storeInSemanticMemory(userId, "brief", result);
@@ -62,6 +64,7 @@ class AIServiceV2 {
    * Returns just the text string for backwards compatibility.
    */
   async generateNudge(userId: string, reason: string): Promise<string> {
+    console.log(`🧠 V2 HIT - generateNudge for ${userId.substring(0, 8)}... (reason: ${reason})`);
     try {
       // Parse the reason to extract trigger type and severity
       const { triggerType, severity } = this.parseNudgeReason(reason);
@@ -72,6 +75,7 @@ class AIServiceV2 {
         reason,
         severity
       );
+      console.log(`✅ V2 SUCCESS - Nudge generated with trigger: ${triggerType}, authority: ${result.metadata.authority}`);
       
       // Store in semantic memory
       await this.storeInSemanticMemory(userId, "nudge", result, { trigger: triggerType });
@@ -104,8 +108,10 @@ class AIServiceV2 {
    * Returns just the text string for backwards compatibility.
    */
   async generateEveningDebrief(userId: string): Promise<string> {
+    console.log(`🧠 V2 HIT - generateEveningDebrief for ${userId.substring(0, 8)}...`);
     try {
       const result = await coachEngine.generateDebrief(userId);
+      console.log(`✅ V2 SUCCESS - Debrief generated with authority: ${result.metadata.authority}, state: ${result.metadata.executionState}`);
       
       // Store in semantic memory
       await this.storeInSemanticMemory(userId, "debrief", result);

@@ -254,7 +254,7 @@ class CoachEngineService {
   
     const bannedSample = BANNED_PHRASES.slice(0, 15).map((p) => `"${p}"`).join(", ");
   
-    return `${VOICE_CONSTITUTION}
+    const systemPrompt = `${VOICE_CONSTITUTION}
   
   ${STATE_DESCRIPTIONS[state]}
   ${AUTHORITY_DESCRIPTIONS[authority]}
@@ -268,6 +268,14 @@ class CoachEngineService {
   BANNED PHRASES (never use): ${bannedSample}
   
   CRITICAL: Always address ${synthesis.userName || "them"} by name. End with questions if brief/debrief.`;
+  
+    console.log(`🗣️ COACH PROMPT - ${messageType} (state: ${state}, authority: ${authority})`);
+    console.log(`   ✓ VOICE_CONSTITUTION included: ${VOICE_CONSTITUTION.substring(0, 50)}...`);
+    console.log(`   ✓ GOLD STANDARD EXAMPLES: ${examples.length} examples loaded for ${state}/${authority}`);
+    console.log(`   ✓ BANNED_PHRASES: ${BANNED_PHRASES.length} phrases blocked`);
+    console.log(`   ✓ User name: ${synthesis.userName}, Days: ${synthesis.daysInSystem}`);
+    
+    return systemPrompt;
   }
   
   private getFallbackBrief(synthesis: any, state: string, authority: string): string {

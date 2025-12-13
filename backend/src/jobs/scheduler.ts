@@ -372,16 +372,23 @@ async function autoNudgesHourly() {
  */
 async function runPatternLearning() {
   console.log(`🧠 ================================`);
-  console.log(`🧠 PATTERN LEARNING STARTING at ${new Date().toISOString()}`);
+  console.log(`🧠 PATTERN LEARNING RUN STARTING at ${new Date().toISOString()}`);
   console.log(`🧠 ================================\n`);
+  console.log(`🧠 This job computes:`);
+  console.log(`   - Behavioral fingerprints (recovery style, challenge response)`);
+  console.log(`   - Shame sensitivity scores`);
+  console.log(`   - Trigger chains (sequences leading to slips)`);
+  console.log(`   - Commitment resolution`);
+  console.log(`   - Message effectiveness patterns\n`);
   
   try {
     // Dynamic import to avoid circular dependencies
     const { patternLearningWorker } = await import("../workers/pattern-learning.worker");
+    console.log(`🧠 Pattern learning worker loaded, processing users...`);
     const result = await patternLearningWorker.processAllUsers();
     
     console.log(`\n🧠 ================================`);
-    console.log(`🧠 PATTERN LEARNING COMPLETE`);
+    console.log(`🧠 PATTERN LEARNING RUN COMPLETE`);
     console.log(`🧠 Processed: ${result.processed} users`);
     console.log(`🧠 Errors: ${result.errors}`);
     console.log(`🧠 ================================\n`);
@@ -472,8 +479,11 @@ export function startWorker() {
         case "weekly-consolidation":
           return runWeeklyConsolidation();
         case "pattern-learning":
-          console.log(`🧠 WORKER starting pattern learning job...`);
-          return runPatternLearning();
+          console.log(`🧠 PATTERN LEARNING RUN - Worker executing scheduled job`);
+          console.log(`🧠 This is the nightly job that makes the AI smarter`);
+          const patternResult = await runPatternLearning();
+          console.log(`🧠 PATTERN LEARNING RUN - Worker job complete: ${patternResult.processed} processed, ${patternResult.errors} errors`);
+          return patternResult;
         default:
           return;
       }

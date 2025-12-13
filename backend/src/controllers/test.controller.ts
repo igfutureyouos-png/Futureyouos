@@ -188,5 +188,30 @@ export async function testController(fastify: FastifyInstance) {
       return reply.code(code).send({ error: err.message, stack: err.stack });
     }
   });
+
+  /**
+   * 🧠 TEST: Manually trigger pattern learning NOW
+   */
+  fastify.post('/api/v1/test/pattern-learning', async (req: any, reply) => {
+    try {
+      console.log(`🧠 PATTERN LEARNING RUN - Manual trigger via test endpoint`);
+      
+      // Dynamic import to match scheduler pattern
+      const { patternLearningWorker } = await import("../workers/pattern-learning.worker");
+      const result = await patternLearningWorker.processAllUsers();
+      
+      console.log(`🧠 PATTERN LEARNING RUN - Manual test complete`);
+      
+      return {
+        ok: true,
+        processed: result.processed,
+        errors: result.errors,
+        message: `Pattern learning complete: ${result.processed} users processed, ${result.errors} errors`
+      };
+    } catch (err: any) {
+      const code = err.statusCode || 500;
+      return reply.code(code).send({ error: err.message, stack: err.stack });
+    }
+  });
 }
 
