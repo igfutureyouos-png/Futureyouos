@@ -25,6 +25,21 @@ import {
 import { deepUserModel } from "./deep-user-model.service";
 import { prisma } from "../utils/db";
 import { redis } from "../utils/redis";
+import {
+  EXAMPLE_BANK,
+  VOICE_CONSTITUTION,
+  AUTHORITY_DESCRIPTIONS,
+  STATE_DESCRIPTIONS,
+  BANNED_PHRASES,
+  getExamples,
+  getQuestionTemplates,
+  fillQuestionTemplate,
+} from "./voice-examples";
+import {
+  voiceValidator,
+  validateOutput,
+  ValidationResult,
+} from "./voice-validator";
 
 // =============================================================================
 // CONFIGURATION
@@ -172,39 +187,155 @@ Voice: Calm, knowing, philosophical but concrete
 class CoachEngineService {
   
   // ---------------------------------------------------------------------------
+  // VOICE CALIBRATION HELPERS
+  // ---------------------------------------------------------------------------
+  
+  private computeState(synthesis: any): "on_track" | "middle" | "slip" {
+    const completion = synthesis.yesterdayPerformance?.rate || 0;
+    const risk = synthesis.currentRisk?.level || "low";
+    
+    if (completion >= 70 && risk !== "high") return "on_track";
+    if (completion < 40 || risk === "high") return "slip";
+    return "middle";
+  }
+  
+  private computeAuthority(synthesis: any): "humble" | "growing" | "earned" | "deep" {
+    const daysInSystem = synthesis.daysInSystem || 0;
+    const dataQuality = synthesis.voiceCalibration?.dataQuality || "sparse";
+  
+    if (dataQuality === "sparse") return "humble";
+    if (daysInSystem < 14) return "humble";
+    if (daysInSystem < 30) {
+      return (dataQuality === "developing" || dataQuality === "rich") ? "growing" : "humble";
+    }
+    if (daysInSystem < 60) {
+      return (dataQuality === "rich" || dataQuality === "comprehensive") ? "earned" : "growing";
+    }
+    return dataQuality === "comprehensive" ? "deep" : "earned";
+  }
+  
+  private buildSystemPromptV2(
+    messageType: "brief" | "nudge" | "debrief" | "letter" | "chat",
+    state: "on_track" | "middle" | "slip",
+    authority: "humble" | "growing" | "earned" | "deep",
+    synthesis: any
+  ): string {
+    const examples = getExamples(state, messageType as any, authority);
+    const examplesText = examples.slice(0, 2)
+      .map((ex, i) => `EXAMPLE ${i + 1}:\n${ex.replace(/\[NAME\]/g, synthesis.userName || "Friend")}`)
+      .join("\n\n---\n\n");
+  
+    const bannedSample = BANNED_PHRASES.slice(0, 15).map((p) => `"${p}"`).join(", ");
+  
+    return `${VOICE_CONSTITUTION}
+  
+  ${STATE_DESCRIPTIONS[state]}
+  ${AUTHORITY_DESCRIPTIONS[authority]}
+  
+  USER NAME: ${synthesis.userName || "Friend"}
+  DAYS IN SYSTEM: ${synthesis.daysInSystem || 0}
+  
+  GOLD STANDARD EXAMPLES (match this voice EXACTLY):
+  ${examplesText}
+  
+  BANNED PHRASES (never use): ${bannedSample}
+  
+  CRITICAL: Always address ${synthesis.userName || "them"} by name. End with questions if brief/debrief.`;
+  }
+  
+  private getFallbackBrief(synthesis: any, state: string, authority: string): string {
+    const examples = getExamples(state as any, "brief", authority as any);
+    if (examples.length > 0) {
+      return examples[0].replace(/\[NAME\]/g, synthesis.userName || "Friend");
+    }
+    return `${synthesis.userName || "Friend"}… today is yours. One clean action. One promise kept.
+  
+  Questions:
+  • What's the one win that would make you proud tonight?
+  • Where do you want to show discipline today?`;
+  }
+  
+  private getFallbackDebrief(synthesis: any, state: string, authority: string): string {
+    const examples = getExamples(state as any, "debrief", authority as any);
+    if (examples.length > 0) {
+      return examples[0].replace(/\[NAME\]/g, synthesis.userName || "Friend");
+    }
+    return `${synthesis.userName || "Friend"}… today showed something. Where did you feel strongest? Where did you hesitate?
+  
+  Questions:
+  • What did you avoid today?
+  • What would tomorrow look like if you showed up fully?`;
+  }
+  
+  private getFallbackNudge(synthesis: any, state: string, authority: string): string {
+    const examples = getExamples(state as any, "nudge", authority as any);
+    if (examples.length > 0) {
+      return examples[0].replace(/\[NAME\]/g, synthesis.userName || "Friend");
+    }
+    return `${synthesis.userName || "Friend"}, what's the one thing you're avoiding right now?`;
+  }
+
+  // ---------------------------------------------------------------------------
   // MAIN GENERATION FUNCTIONS
   // ---------------------------------------------------------------------------
   
   /**
-   * Generate morning brief.
+   * Generate morning brief with voice validation and retry.
    */
   async generateBrief(userId: string, options?: GenerationOptions): Promise<CoachOutput> {
     const synthesis = await memorySynthesis.synthesizeForBrief(userId);
-    
-    const systemPrompt = this.buildSystemPrompt(synthesis.voiceCalibration, synthesis.phase);
-    const userPrompt = this.buildBriefPrompt(synthesis);
-    
-    const text = await this.callLLM(systemPrompt, userPrompt, {
-      maxTokens: options?.maxTokens || 600,
-      temperature: options?.temperature || 0.8,
-    });
-    
-    // Log the generation
-    await this.logGeneration(userId, "brief", synthesis, text);
-    
-    // Extract any commitments from questions asked
-    const questionsAsked = this.extractQuestionsFromResponse(text);
+    const state = this.computeState(synthesis);
+    const authority = this.computeAuthority(synthesis);
+  
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const systemPrompt = this.buildSystemPromptV2("brief", state, authority, synthesis);
+      const userPrompt = this.buildBriefPrompt(synthesis);
+      
+      const text = await this.callLLM(systemPrompt, userPrompt, {
+        maxTokens: options?.maxTokens || 800,
+        temperature: options?.temperature || 0.8,
+      });
+  
+      const validation = validateOutput(text, {
+        messageType: "brief",
+        userName: synthesis.userName,
+        strictMode: true,
+      });
+  
+      if (validation.passed) {
+        await this.logGeneration(userId, "brief", synthesis, text);
+        const questionsAsked = this.extractQuestionsFromResponse(text);
+        
+        return {
+          text: voiceValidator.clean(text, synthesis.userName),
+          metadata: {
+            executionState: state,
+            riskLevel: synthesis.currentRisk?.level || "low",
+            authority,
+            dataQuality: synthesis.voiceCalibration?.dataQuality || "sparse",
+            phase: synthesis.phase || "observer",
+            intensity: synthesis.voiceCalibration?.currentIntensity || 5,
+            questionsAsked,
+          },
+        };
+      }
+  
+      console.warn(`Brief validation failed (attempt ${attempt}):`, validation.violations);
+    }
+  
+    // Fallback to gold standard example
+    const fallbackText = this.getFallbackBrief(synthesis, state, authority);
+    await this.logGeneration(userId, "brief", synthesis, fallbackText);
     
     return {
-      text,
-      metadata: {
-        executionState: synthesis.executionState,
-        riskLevel: synthesis.currentRisk.level,
-        authority: synthesis.voiceCalibration.authority,
-        dataQuality: synthesis.voiceCalibration.dataQuality,
-        phase: synthesis.phase,
-        intensity: synthesis.voiceCalibration.currentIntensity,
-        questionsAsked,
+      text: fallbackText,
+      metadata: { 
+        executionState: state, 
+        authority, 
+        riskLevel: "low",
+        dataQuality: "sparse",
+        phase: synthesis.phase || "observer",
+        intensity: 5,
       },
     };
   }
