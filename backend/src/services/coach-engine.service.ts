@@ -202,15 +202,42 @@ class CoachEngineService {
   private computeAuthority(synthesis: any): "humble" | "growing" | "earned" | "deep" {
     const daysInSystem = synthesis.daysInSystem || 0;
     const dataQuality = synthesis.voiceCalibration?.dataQuality || "sparse";
-  
+    const reflectionCount = synthesis.reflectionCount || 0;
+    const patternConfidence = synthesis.modelConfidence || "insufficient";
+    
+    // Early exit: not enough data
     if (dataQuality === "sparse") return "humble";
     if (daysInSystem < 14) return "humble";
-    if (daysInSystem < 30) {
+    
+    // Factor in reflections answered — this accelerates authority
+    // Someone who actively reflects gets authority faster
+    const reflectionBoost = 
+      reflectionCount >= 30 ? 2 :  // Strong boost
+      reflectionCount >= 15 ? 1 :  // Moderate boost
+      reflectionCount >= 5 ? 0.5 : // Small boost
+      0;
+    
+    // Adjust days based on reflection engagement
+    const effectiveDays = daysInSystem + (reflectionBoost * 10);
+    
+    // High reflection count can unlock earned authority faster
+    if (reflectionCount >= 20 && daysInSystem >= 21 && 
+        (dataQuality === "rich" || dataQuality === "comprehensive")) {
+      return patternConfidence === "high" ? "deep" : "earned";
+    }
+    
+    if (effectiveDays < 30) {
       return (dataQuality === "developing" || dataQuality === "rich") ? "growing" : "humble";
     }
-    if (daysInSystem < 60) {
+    if (effectiveDays < 60) {
       return (dataQuality === "rich" || dataQuality === "comprehensive") ? "earned" : "growing";
     }
+    
+    // Deep authority requires comprehensive data AND high pattern confidence
+    if (dataQuality === "comprehensive" && patternConfidence === "high") {
+      return "deep";
+    }
+    
     return dataQuality === "comprehensive" ? "deep" : "earned";
   }
   
@@ -273,6 +300,24 @@ class CoachEngineService {
       return examples[0].replace(/\[NAME\]/g, synthesis.userName || "Friend");
     }
     return `${synthesis.userName || "Friend"}, what's the one thing you're avoiding right now?`;
+  }
+  
+  private getFallbackLetter(synthesis: any, state: string, authority: string): string {
+    const examples = getExamples(state as any, "letter", authority as any);
+    if (examples.length > 0) {
+      return examples[0].replace(/\[NAME\]/g, synthesis.userName || "Friend");
+    }
+    return `${synthesis.userName || "Friend"}… this week showed something real.
+
+You didn't just complete habits — you built EVIDENCE.
+Evidence that you can show up regardless of mood.
+Evidence that your consistency is getting sharper.
+
+Your wins weren't flashy — they were disciplined.
+And that's exactly why they matter.
+
+Next week, we tighten the screws.
+Not to pressure you — to honour the standard you're building.`;
   }
 
   // ---------------------------------------------------------------------------
@@ -341,7 +386,7 @@ class CoachEngineService {
   }
   
   /**
-   * Generate nudge.
+   * Generate nudge with voice validation and retry.
    */
   async generateNudge(
     userId: string, 
@@ -356,91 +401,178 @@ class CoachEngineService {
       triggerReason, 
       severity
     );
+    const state = this.computeState(synthesis);
+    const authority = this.computeAuthority(synthesis);
     
-    const systemPrompt = this.buildSystemPrompt(synthesis.voiceCalibration, synthesis.phase);
-    const userPrompt = this.buildNudgePrompt(synthesis);
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const systemPrompt = this.buildSystemPromptV2("nudge", state, authority, synthesis);
+      const userPrompt = this.buildNudgePrompt(synthesis);
+      
+      const text = await this.callLLM(systemPrompt, userPrompt, {
+        maxTokens: options?.maxTokens || 200,
+        temperature: options?.temperature || 0.7,
+      });
+      
+      const validation = validateOutput(text, {
+        messageType: "nudge",
+        userName: synthesis.userName,
+        strictMode: false, // Nudges are shorter, less strict
+      });
+      
+      if (validation.passed) {
+        await this.logGeneration(userId, "nudge", synthesis, text, { trigger: triggerType });
+        
+        return {
+          text: voiceValidator.clean(text, synthesis.userName),
+          metadata: {
+            executionState: state,
+            riskLevel: synthesis.currentRisk?.level || "low",
+            authority,
+            dataQuality: synthesis.voiceCalibration?.dataQuality || "sparse",
+            phase: synthesis.phase || "observer",
+            intensity: synthesis.voiceCalibration?.currentIntensity || 5,
+            trigger: triggerType,
+          },
+        };
+      }
+      
+      console.warn(`Nudge validation failed (attempt ${attempt}):`, validation.violations);
+    }
     
-    const text = await this.callLLM(systemPrompt, userPrompt, {
-      maxTokens: options?.maxTokens || 200,
-      temperature: options?.temperature || 0.7,
-    });
-    
-    // Log the generation
-    await this.logGeneration(userId, "nudge", synthesis, text, { trigger: triggerType });
+    // Fallback to gold standard example
+    const fallbackText = this.getFallbackNudge(synthesis, state, authority);
+    await this.logGeneration(userId, "nudge", synthesis, fallbackText, { trigger: triggerType });
     
     return {
-      text,
+      text: fallbackText,
       metadata: {
-        executionState: synthesis.executionState,
-        riskLevel: synthesis.currentRisk.level,
-        authority: synthesis.voiceCalibration.authority,
-        dataQuality: synthesis.voiceCalibration.dataQuality,
-        phase: synthesis.phase,
-        intensity: synthesis.voiceCalibration.currentIntensity,
+        executionState: state,
+        authority,
+        riskLevel: "low",
+        dataQuality: "sparse",
+        phase: synthesis.phase || "observer",
+        intensity: 5,
         trigger: triggerType,
       },
     };
   }
   
   /**
-   * Generate evening debrief.
+   * Generate evening debrief with voice validation and retry.
    */
   async generateDebrief(userId: string, options?: GenerationOptions): Promise<CoachOutput> {
     const synthesis = await memorySynthesis.synthesizeForDebrief(userId);
+    const state = this.computeState(synthesis);
+    const authority = this.computeAuthority(synthesis);
     
-    const systemPrompt = this.buildSystemPrompt(synthesis.voiceCalibration, synthesis.phase);
-    const userPrompt = this.buildDebriefPrompt(synthesis);
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const systemPrompt = this.buildSystemPromptV2("debrief", state, authority, synthesis);
+      const userPrompt = this.buildDebriefPrompt(synthesis);
+      
+      const text = await this.callLLM(systemPrompt, userPrompt, {
+        maxTokens: options?.maxTokens || 600,
+        temperature: options?.temperature || 0.8,
+      });
+      
+      const validation = validateOutput(text, {
+        messageType: "debrief",
+        userName: synthesis.userName,
+        strictMode: true,
+      });
+      
+      if (validation.passed) {
+        await this.logGeneration(userId, "debrief", synthesis, text);
+        const questionsAsked = this.extractQuestionsFromResponse(text);
+        
+        return {
+          text: voiceValidator.clean(text, synthesis.userName),
+          metadata: {
+            executionState: state,
+            riskLevel: synthesis.currentRisk?.level || "low",
+            authority,
+            dataQuality: synthesis.voiceCalibration?.dataQuality || "sparse",
+            phase: synthesis.phase || "observer",
+            intensity: synthesis.voiceCalibration?.currentIntensity || 5,
+            questionsAsked,
+          },
+        };
+      }
+      
+      console.warn(`Debrief validation failed (attempt ${attempt}):`, validation.violations);
+    }
     
-    const text = await this.callLLM(systemPrompt, userPrompt, {
-      maxTokens: options?.maxTokens || 600,
-      temperature: options?.temperature || 0.8,
-    });
-    
-    // Log the generation
-    await this.logGeneration(userId, "debrief", synthesis, text);
-    
-    const questionsAsked = this.extractQuestionsFromResponse(text);
+    // Fallback to gold standard example
+    const fallbackText = this.getFallbackDebrief(synthesis, state, authority);
+    await this.logGeneration(userId, "debrief", synthesis, fallbackText);
     
     return {
-      text,
+      text: fallbackText,
       metadata: {
-        executionState: synthesis.executionState,
-        riskLevel: synthesis.currentRisk.level,
-        authority: synthesis.voiceCalibration.authority,
-        dataQuality: synthesis.voiceCalibration.dataQuality,
-        phase: synthesis.phase,
-        intensity: synthesis.voiceCalibration.currentIntensity,
-        questionsAsked,
+        executionState: state,
+        authority,
+        riskLevel: "low",
+        dataQuality: "sparse",
+        phase: synthesis.phase || "observer",
+        intensity: 5,
       },
     };
   }
   
   /**
-   * Generate weekly letter.
+   * Generate weekly letter with voice validation and retry.
    */
   async generateWeeklyLetter(userId: string, options?: GenerationOptions): Promise<CoachOutput> {
     const synthesis = await memorySynthesis.synthesizeForWeeklyLetter(userId);
+    const state = this.computeState(synthesis);
+    const authority = this.computeAuthority(synthesis);
     
-    const systemPrompt = this.buildSystemPrompt(synthesis.voiceCalibration, synthesis.phase);
-    const userPrompt = this.buildWeeklyLetterPrompt(synthesis);
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const systemPrompt = this.buildSystemPromptV2("letter", state, authority, synthesis);
+      const userPrompt = this.buildWeeklyLetterPrompt(synthesis);
+      
+      const text = await this.callLLM(systemPrompt, userPrompt, {
+        maxTokens: options?.maxTokens || 1000,
+        temperature: options?.temperature || 0.85,
+      });
+      
+      const validation = validateOutput(text, {
+        messageType: "letter",
+        userName: synthesis.userName,
+        strictMode: false, // Letters are long-form, less strict
+      });
+      
+      if (validation.passed) {
+        await this.logGeneration(userId, "letter", synthesis, text);
+        
+        return {
+          text: voiceValidator.clean(text, synthesis.userName),
+          metadata: {
+            executionState: state,
+            riskLevel: synthesis.currentRisk?.level || "low",
+            authority,
+            dataQuality: synthesis.voiceCalibration?.dataQuality || "sparse",
+            phase: synthesis.phase || "observer",
+            intensity: synthesis.voiceCalibration?.currentIntensity || 5,
+          },
+        };
+      }
+      
+      console.warn(`Weekly letter validation failed (attempt ${attempt}):`, validation.violations);
+    }
     
-    const text = await this.callLLM(systemPrompt, userPrompt, {
-      maxTokens: options?.maxTokens || 1000,
-      temperature: options?.temperature || 0.85,
-    });
-    
-    // Log the generation
-    await this.logGeneration(userId, "letter", synthesis, text);
+    // Fallback to gold standard example
+    const fallbackText = this.getFallbackLetter(synthesis, state, authority);
+    await this.logGeneration(userId, "letter", synthesis, fallbackText);
     
     return {
-      text,
+      text: fallbackText,
       metadata: {
-        executionState: synthesis.executionState,
-        riskLevel: synthesis.currentRisk.level,
-        authority: synthesis.voiceCalibration.authority,
-        dataQuality: synthesis.voiceCalibration.dataQuality,
-        phase: synthesis.phase,
-        intensity: synthesis.voiceCalibration.currentIntensity,
+        executionState: state,
+        authority,
+        riskLevel: "low",
+        dataQuality: "sparse",
+        phase: synthesis.phase || "observer",
+        intensity: 5,
       },
     };
   }
@@ -531,6 +663,7 @@ ${voice.phaseTone}`;
   private buildBriefPrompt(synthesis: BriefSynthesis): string {
     const dataContext = this.buildDataContext(synthesis);
     const questionGuidance = this.getQuestionGuidance(synthesis.questionFocus);
+    const reflectionsContext = this.buildReflectionsContext(synthesis);
     
     return `Generate a morning brief for ${synthesis.userName}.
 
@@ -556,6 +689,8 @@ ${synthesis.earnedTruths.slice(0, 3).map(t => `- ${t.statement}`).join("\n")}` :
 ${synthesis.hypotheses.length > 0 ? `HYPOTHESES (probe if relevant):
 ${synthesis.hypotheses.filter(h => h.shouldProbe).slice(0, 2).map(h => `- ${h.statement}`).join("\n")}` : ""}
 
+${reflectionsContext}
+
 ---
 FORMAT:
 2-3 paragraphs maximum.
@@ -568,7 +703,8 @@ ANTI-GENERIC CHECKLIST:
 □ Did I reference at least 2 specific data points?
 □ Did I avoid "You've got this" and similar clichés?
 □ Is my question specific to THIS user's situation?
-□ Would this message make sense for anyone else? (It shouldn't)`;
+□ Would this message make sense for anyone else? (It shouldn't)
+${synthesis.pastReflections.length > 0 ? `□ Did I reference something they told me? (You should!)` : ""}`;
   }
   
   private buildNudgePrompt(synthesis: NudgeSynthesis): string {
@@ -607,6 +743,7 @@ ${synthesis.voiceCalibration.requiresSoftLanding ? "⚠️ This user needs soft 
   
   private buildDebriefPrompt(synthesis: DebriefSynthesis): string {
     const dataContext = this.buildDataContext(synthesis);
+    const reflectionsContext = this.buildReflectionsContext(synthesis);
     
     return `Generate an evening debrief for ${synthesis.userName}.
 
@@ -635,6 +772,8 @@ ${synthesis.tomorrowSetup.commitmentToProbe ? `- Check on: "${synthesis.tomorrow
 ${synthesis.activeContradictions.length > 0 ? `CONTRADICTIONS TO ADDRESS:
 ${synthesis.activeContradictions.slice(0, 1).map(c => `- ${c.description}`).join("\n")}` : ""}
 
+${reflectionsContext}
+
 ---
 FORMAT:
 2-3 paragraphs maximum.
@@ -646,7 +785,8 @@ End with 1-2 questions that:
 FOCUS:
 - What actually happened vs what they intended
 - One honest observation about their pattern
-- One forward-looking question`;
+- One forward-looking question
+${synthesis.pastReflections?.length > 0 ? `- Reference what they've told you before` : ""}`;
   }
   
   private buildWeeklyLetterPrompt(synthesis: WeeklyLetterSynthesis): string {
@@ -757,6 +897,45 @@ RECENT PERFORMANCE:
 ${synthesis.recentData.activeStreaks.length > 0 ? `- Active streaks: ${synthesis.recentData.activeStreaks.map(s => `${s.habitTitle} (${s.days}d)`).join(", ")}` : "- No active streaks"}
 
 ${synthesis.activeTriggerWarning ? `⚠️ ACTIVE WARNING: ${synthesis.activeTriggerWarning.chainName} pattern detected (stage ${synthesis.activeTriggerWarning.currentStage}/${synthesis.activeTriggerWarning.totalStages})` : ""}`;
+  }
+  
+  /**
+   * Build context from past reflections for memory loop.
+   * This allows AI to say "You said last week..." or "You told me..."
+   */
+  private buildReflectionsContext(synthesis: any): string {
+    if (!synthesis.pastReflections || synthesis.pastReflections.length === 0) {
+      return "";
+    }
+    
+    const reflections = synthesis.pastReflections.slice(0, 3).map((r: any) => {
+      const timeAgo = this.formatDayKeyToTimeAgo(r.dayKey);
+      return `- "${r.text}" (${timeAgo}, from ${r.source === "morning_brief" ? "morning brief" : "evening debrief"})`;
+    });
+    
+    return `PAST REFLECTIONS (use these to show you remember):
+${reflections.join("\n")}
+
+MEMORY LOOP GUIDANCE:
+- Reference what they've told you: "You said..." or "You mentioned..."
+- Connect patterns: "Last week you said X, and today..."
+- Show continuity: "Remember when you told me..."`;
+  }
+  
+  private formatDayKeyToTimeAgo(dayKey: string): string {
+    try {
+      const date = new Date(dayKey);
+      const now = new Date();
+      const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 0) return "today";
+      if (diffDays === 1) return "yesterday";
+      if (diffDays < 7) return `${diffDays} days ago`;
+      if (diffDays < 14) return "last week";
+      return `${Math.floor(diffDays / 7)} weeks ago`;
+    } catch {
+      return "recently";
+    }
   }
   
   private getQuestionGuidance(focus: BriefSynthesis["questionFocus"]): string {

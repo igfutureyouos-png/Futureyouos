@@ -27,6 +27,7 @@ import {
   } from "./deep-user-model.service";
   import { prisma } from "../utils/db";
   import { redis } from "../utils/redis";
+  import { semanticMemory } from "./semanticMemory.service";
   
   // =============================================================================
   // TYPE DEFINITIONS
@@ -164,6 +165,14 @@ import {
     
     // Model confidence
     modelConfidence: "insufficient" | "low" | "medium" | "high";
+    
+    // Past reflections from Chroma (for referencing)
+    pastReflections: Array<{
+      text: string;
+      dayKey: string;
+      source: string;
+    }>;
+    reflectionCount: number;
   }
   
   // -----------------------------------------------------------------------------
@@ -534,6 +543,9 @@ import {
       // Get recent data snapshot
       const recentData = await this.getRecentDataSnapshot(model);
       
+      // Get past reflections from Chroma for memory loop
+      const { pastReflections, reflectionCount } = await this.getRelevantReflections(model.identity.userId);
+      
       return {
         userId: model.identity.userId,
         userName: model.identity.name,
@@ -556,7 +568,77 @@ import {
         recurringExcuses: model.psychology.recurringExcuses,
         timeWasters: model.psychology.timeWasters,
         modelConfidence: model.modelConfidence,
+        pastReflections,
+        reflectionCount,
       };
+    }
+    
+    // ---------------------------------------------------------------------------
+    // REFLECTION MEMORY LOOP (Chroma Integration)
+    // ---------------------------------------------------------------------------
+    
+    /**
+     * Query Chroma for relevant past reflections.
+     * This is the memory loop that allows AI to say "You said last week..."
+     */
+    private async getRelevantReflections(userId: string): Promise<{
+      pastReflections: Array<{ text: string; dayKey: string; source: string }>;
+      reflectionCount: number;
+    }> {
+      try {
+        // Get recent reflections from Chroma
+        const recentMemories = await semanticMemory.getRecentMemories({
+          userId,
+          type: "reflection",
+          limit: 10,
+        });
+        
+        // Also count total reflections from Postgres for authority calculation
+        const reflectionCount = await prisma.event.count({
+          where: {
+            userId,
+            type: "reflection_answer",
+          },
+        });
+        
+        const pastReflections = recentMemories.map(m => ({
+          text: m.text,
+          dayKey: m.metadata?.dayKey || new Date(m.metadata?.timestamp || Date.now()).toISOString().split("T")[0],
+          source: m.metadata?.source || "unknown",
+        }));
+        
+        console.log(`📚 [MemorySynthesis] Loaded ${pastReflections.length} reflections for ${userId.substring(0, 8)}... (total: ${reflectionCount})`);
+        
+        return { pastReflections, reflectionCount };
+      } catch (err) {
+        console.warn(`⚠️ [MemorySynthesis] Failed to load reflections:`, err);
+        return { pastReflections: [], reflectionCount: 0 };
+      }
+    }
+    
+    /**
+     * Query Chroma for reflections relevant to a specific context.
+     * Used when generating targeted messages that should reference past answers.
+     */
+    async getContextualReflections(userId: string, context: string): Promise<Array<{ text: string; dayKey: string; score: number }>> {
+      try {
+        const memories = await semanticMemory.queryMemories({
+          userId,
+          type: "reflection",
+          query: context,
+          limit: 5,
+          minScore: 0.5,
+        });
+        
+        return memories.map(m => ({
+          text: m.text,
+          dayKey: m.metadata?.dayKey || "recent",
+          score: m.score,
+        }));
+      } catch (err) {
+        console.warn(`⚠️ [MemorySynthesis] Failed to query contextual reflections:`, err);
+        return [];
+      }
     }
     
     // ---------------------------------------------------------------------------

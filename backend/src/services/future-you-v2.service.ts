@@ -2,10 +2,14 @@ import OpenAI from "openai";
 import { prisma } from "../utils/db";
 import { redis } from "../utils/redis";
 import { memoryService } from "./memory.service";
+import { coachEngine } from "./coach-engine.service";
 
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 const TEMP_ANALYST = 0.25; // Cold logic
 const TEMP_VOICE = 0.7;    // Warm communication
+
+// Use coach engine for gold standard voice
+const USE_COACH_ENGINE = true;
 
 function aiClient() {
   const key = process.env.OPENAI_API_KEY?.trim();
@@ -250,6 +254,62 @@ export class FutureYouV2Service {
   private ns(userId: string) { return `futureyou:v2:${userId}`; }
 
   async chat(userId: string, userMessage: string) {
+    // 🧠 USE COACH ENGINE FOR GOLD STANDARD VOICE
+    if (USE_COACH_ENGINE) {
+      try {
+        console.log(`🧠 [Future-You v2] Using coach engine for ${userId.substring(0, 8)}...`);
+        
+        // Load conversation history for coach engine
+        const key = `${this.ns(userId)}:chat`;
+        const raw = await redis.get(key);
+        const history = raw ? safeJSON(raw, []) : [];
+        
+        // Convert to coach engine format
+        const conversationHistory = history.slice(-10).map((m: any) => ({
+          role: m.role,
+          content: m.content,
+        }));
+        
+        // Generate using coach engine with gold standard voice
+        const result = await coachEngine.generateChatResponse(
+          userId,
+          userMessage,
+          conversationHistory
+        );
+        
+        const aiText = result.text;
+        
+        // Save to history
+        const now = new Date().toISOString();
+        history.push({ role: "user", content: userMessage, timestamp: now });
+        history.push({ 
+          role: "assistant", 
+          content: aiText, 
+          timestamp: now,
+          meta: { source: "coach_engine", ...result.metadata }
+        });
+        
+        const trimmedHistory = history.slice(-50);
+        await redis.set(key, JSON.stringify(trimmedHistory), "EX", 3600 * 24 * 30);
+        
+        // Log event
+        await prisma.event.create({
+          data: {
+            userId,
+            type: "futureyou_v2_chat",
+            payload: { aiText, source: "coach_engine", metadata: result.metadata }
+          }
+        });
+        
+        console.log(`✅ [Future-You v2] Coach engine response generated`);
+        return aiText;
+      } catch (err) {
+        console.warn(`⚠️ [Future-You v2] Coach engine failed, falling back to legacy:`, err);
+        // Fall through to legacy implementation
+      }
+    }
+    
+    // LEGACY IMPLEMENTATION (fallback)
     const openai = aiClient();
     if (!openai) return "Future-You is quiet right now. Try again soon.";
 

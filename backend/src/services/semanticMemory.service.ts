@@ -46,6 +46,12 @@ export class SemanticMemoryService {
 
   private async initialize(): Promise<void> {
     try {
+      // DETAILED DIAGNOSTICS
+      console.log("🔍 [Chroma Init] Starting initialization...");
+      console.log(`🔍 [Chroma Init] CHROMA_URL: ${CHROMA_URL ? `"${CHROMA_URL}"` : "NOT SET"}`);
+      console.log(`🔍 [Chroma Init] CHROMA_PATH: ${CHROMA_PATH ? `"${CHROMA_PATH}"` : "NOT SET"}`);
+      console.log(`🔍 [Chroma Init] OPENAI_API_KEY: ${OPENAI_API_KEY ? "SET" : "NOT SET"}`);
+      
       // Check if Chroma is configured
       if (!CHROMA_URL && !CHROMA_PATH) {
         console.warn("⚠️ Chroma not configured (no CHROMA_URL or CHROMA_PATH) — semantic memory disabled");
@@ -69,18 +75,25 @@ export class SemanticMemoryService {
       }
 
       // Initialize OpenAI embedder
+      console.log(`🔍 [Chroma Init] Creating OpenAI embedder...`);
       this.embedder = new OpenAIEmbeddingFunction({
         openai_api_key: OPENAI_API_KEY,
         openai_model: "text-embedding-3-small",
       });
 
       // Test connection
+      console.log(`🔍 [Chroma Init] Testing connection with heartbeat...`);
       await this.client!.heartbeat();
       
       this.isAvailable = true;
       console.log("✅ Semantic memory initialized successfully");
-    } catch (err) {
-      console.warn("⚠️ Failed to initialize Chroma — semantic memory disabled:", err);
+    } catch (err: any) {
+      console.error("❌ [Chroma Init] FAILED TO INITIALIZE:");
+      console.error(`   Error type: ${err?.constructor?.name}`);
+      console.error(`   Error message: ${err?.message}`);
+      console.error(`   Error code: ${err?.code}`);
+      console.error(`   Full error:`, err);
+      console.warn("⚠️ Semantic memory disabled due to initialization failure");
       this.isAvailable = false;
       this.client = null;
       this.embedder = null;
