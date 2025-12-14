@@ -150,20 +150,21 @@ ${context.recentEvents.slice(0, 100).map((e) => e.type).join(", ")}
       await memoryService.upsertFacts(userId, parsed.factsPatch);
     }
 
-    // 2. Generate and save weekly letter as CoachMessage
+    // 2. Generate and save weekly letter as CoachMessage (with activity gates)
     let weeklyLetterText = "";
     try {
-      const { aiService } = await import("./ai.service");
-      weeklyLetterText = await aiService.generateWeeklyLetter(userId);
+      weeklyLetterText = await this.generateWeeklyLetterWithGates(userId);
       
-      // Save as CoachMessage (kind = letter)
-      const { coachMessageService } = await import("./coach-message.service");
-      await coachMessageService.createMessage(userId, "letter", weeklyLetterText, {
-        source: "weekly_consolidation",
-        insights: insights.map((i) => ({ type: i.type, title: i.title })),
-      });
-      
-      console.log(`✅ Weekly letter generated and saved for user ${userId}`);
+      // Only save if we got actual content
+      if (weeklyLetterText) {
+        const { coachMessageService } = await import("./coach-message.service");
+        await coachMessageService.createMessage(userId, "letter", weeklyLetterText, {
+          source: "weekly_consolidation",
+          insights: insights.map((i) => ({ type: i.type, title: i.title })),
+        });
+        
+        console.log(`✅ Weekly letter generated and saved for user ${userId}`);
+      }
     } catch (err) {
       console.error(`❌ Failed to generate weekly letter for ${userId}:`, err);
       // Continue even if letter generation fails
@@ -184,6 +185,50 @@ ${context.recentEvents.slice(0, 100).map((e) => e.type).join(", ")}
     });
 
     return { ok: true, reflection: parsed.weeklyReflection, insights, letterText: weeklyLetterText };
+  }
+
+  /**
+   * 🚪 Generate weekly letter with activity gates
+   * Gate 1: User must have been in system for at least 7 days
+   * Gate 2: User must have at least 5 events in the past week
+   */
+  private async generateWeeklyLetterWithGates(userId: string): Promise<string> {
+    // Gate 1: Days in system
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return "";
+    
+    const daysInSystem = Math.floor((Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysInSystem < 7) {
+      console.log(`⏭️ User ${userId} only ${daysInSystem} days in system, skipping weekly letter`);
+      return ""; // Skip letter for new users
+    }
+    
+    // Gate 2: Minimum activity
+    const recentEvents = await prisma.event.count({
+      where: {
+        userId,
+        ts: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+      }
+    });
+    
+    if (recentEvents < 5) {
+      console.log(`⏭️ User ${userId} only ${recentEvents} events this week, sending onboarding reflection`);
+      return this.getOnboardingReflection(user);
+    }
+    
+    // Gates passed, generate real letter via CoachEngine
+    console.log(`✅ User ${userId} passed activity gates (${daysInSystem} days, ${recentEvents} events), generating letter`);
+    const { aiServiceV2 } = await import("./ai.service.v2");
+    return aiServiceV2.generateWeeklyLetter(userId);
+  }
+
+  /**
+   * 📝 Onboarding reflection for users who don't meet activity threshold
+   */
+  private getOnboardingReflection(user: any): string {
+    const name = user.email?.split("@")[0] || "Friend";
+    return `${name}, you're in your first week with Future-You OS. This isn't a time for deep letters yet — it's for building the habit foundation. Keep logging your days. The insights come from consistency, not perfection.`;
   }
 
   /**

@@ -1,11 +1,16 @@
 // =============================================================================
-// COACH ENGINE SERVICE
+// COACH ENGINE SERVICE - SINGLE SOURCE OF TRUTH
 // =============================================================================
-// The unified generation engine for all coach messages.
-// This is the single source of truth for Brief, Nudge, Debrief, Weekly Letter,
-// and Chat response generation.
+// ⚠️ CRITICAL: This is the ONLY service authorized to determine:
+//   - Message tone, intensity, confrontation level
+//   - Voice calibration (authority, state, phase)
+//   - Voice validation and output quality
+//   - Message generation for: Brief, Nudge, Debrief, Weekly Letter, Chat
 //
-// All generation flows through this engine, ensuring:
+// ALL coaching messages MUST flow through this engine.
+// DO NOT create parallel generation logic elsewhere.
+//
+// The unified generation engine for all coach messages ensuring:
 // - Consistent voice calibration based on user's shame sensitivity and state
 // - Data-grounded messages using MemorySynthesis
 // - Phase-appropriate tone (Observer → Architect → Oracle)
@@ -336,9 +341,12 @@ Not to pressure you — to honour the standard you're building.`;
    * Generate morning brief with voice validation and retry.
    */
   async generateBrief(userId: string, options?: GenerationOptions): Promise<CoachOutput> {
+    console.log(`🧠 [COACH ENGINE] Generating brief for user ${userId.substring(0, 8)}...`);
     const synthesis = await memorySynthesis.synthesizeForBrief(userId);
     const state = this.computeState(synthesis);
     const authority = this.computeAuthority(synthesis);
+    console.log(`   Phase: ${synthesis.phase}, Authority: ${authority}, State: ${state}`);
+    console.log(`   Data Quality: ${synthesis.voiceCalibration.dataQuality}, Intensity: ${synthesis.voiceCalibration.currentIntensity}`);
   
     for (let attempt = 1; attempt <= 2; attempt++) {
       const systemPrompt = this.buildSystemPromptV2("brief", state, authority, synthesis);
@@ -358,6 +366,7 @@ Not to pressure you — to honour the standard you're building.`;
       if (validation.passed) {
         await this.logGeneration(userId, "brief", synthesis, text);
         const questionsAsked = this.extractQuestionsFromResponse(text);
+        console.log(`✅ [COACH ENGINE] Brief generated successfully (${text.length} chars)`);
         
         return {
           text: voiceValidator.clean(text, synthesis.userName),
@@ -403,6 +412,8 @@ Not to pressure you — to honour the standard you're building.`;
     severity: number = 3,
     options?: GenerationOptions
   ): Promise<CoachOutput> {
+    console.log(`🧠 [COACH ENGINE] Generating nudge for user ${userId.substring(0, 8)}...`);
+    console.log(`   Trigger: ${triggerType}, Severity: ${severity}`);
     const synthesis = await memorySynthesis.synthesizeForNudge(
       userId, 
       triggerType, 
@@ -411,6 +422,7 @@ Not to pressure you — to honour the standard you're building.`;
     );
     const state = this.computeState(synthesis);
     const authority = this.computeAuthority(synthesis);
+    console.log(`   Phase: ${synthesis.phase}, Authority: ${authority}, State: ${state}`);
     
     for (let attempt = 1; attempt <= 2; attempt++) {
       const systemPrompt = this.buildSystemPromptV2("nudge", state, authority, synthesis);
@@ -429,6 +441,7 @@ Not to pressure you — to honour the standard you're building.`;
       
       if (validation.passed) {
         await this.logGeneration(userId, "nudge", synthesis, text, { trigger: triggerType });
+        console.log(`✅ [COACH ENGINE] Nudge generated successfully (${text.length} chars)`);
         
         return {
           text: voiceValidator.clean(text, synthesis.userName),
@@ -469,9 +482,12 @@ Not to pressure you — to honour the standard you're building.`;
    * Generate evening debrief with voice validation and retry.
    */
   async generateDebrief(userId: string, options?: GenerationOptions): Promise<CoachOutput> {
+    console.log(`🧠 [COACH ENGINE] Generating debrief for user ${userId.substring(0, 8)}...`);
     const synthesis = await memorySynthesis.synthesizeForDebrief(userId);
     const state = this.computeState(synthesis);
     const authority = this.computeAuthority(synthesis);
+    console.log(`   Phase: ${synthesis.phase}, Authority: ${authority}, State: ${state}`);
+    console.log(`   Data Quality: ${synthesis.voiceCalibration.dataQuality}, Intensity: ${synthesis.voiceCalibration.currentIntensity}`);
     
     for (let attempt = 1; attempt <= 2; attempt++) {
       const systemPrompt = this.buildSystemPromptV2("debrief", state, authority, synthesis);
@@ -491,6 +507,7 @@ Not to pressure you — to honour the standard you're building.`;
       if (validation.passed) {
         await this.logGeneration(userId, "debrief", synthesis, text);
         const questionsAsked = this.extractQuestionsFromResponse(text);
+        console.log(`✅ [COACH ENGINE] Debrief generated successfully (${text.length} chars)`);
         
         return {
           text: voiceValidator.clean(text, synthesis.userName),
@@ -530,9 +547,12 @@ Not to pressure you — to honour the standard you're building.`;
    * Generate weekly letter with voice validation and retry.
    */
   async generateWeeklyLetter(userId: string, options?: GenerationOptions): Promise<CoachOutput> {
+    console.log(`🧠 [COACH ENGINE] Generating weekly letter for user ${userId.substring(0, 8)}...`);
     const synthesis = await memorySynthesis.synthesizeForWeeklyLetter(userId);
     const state = this.computeState(synthesis);
     const authority = this.computeAuthority(synthesis);
+    console.log(`   Phase: ${synthesis.phase}, Authority: ${authority}, State: ${state}`);
+    console.log(`   Data Quality: ${synthesis.voiceCalibration.dataQuality}, Intensity: ${synthesis.voiceCalibration.currentIntensity}`);
     
     for (let attempt = 1; attempt <= 2; attempt++) {
       const systemPrompt = this.buildSystemPromptV2("letter", state, authority, synthesis);
@@ -551,6 +571,7 @@ Not to pressure you — to honour the standard you're building.`;
       
       if (validation.passed) {
         await this.logGeneration(userId, "letter", synthesis, text);
+        console.log(`✅ [COACH ENGINE] Weekly letter generated successfully (${text.length} chars)`);
         
         return {
           text: voiceValidator.clean(text, synthesis.userName),
@@ -594,7 +615,10 @@ Not to pressure you — to honour the standard you're building.`;
     conversationHistory: Array<{ role: string; content: string }>,
     options?: GenerationOptions
   ): Promise<CoachOutput> {
+    console.log(`🧠 [COACH ENGINE] Generating chat response for user ${userId.substring(0, 8)}...`);
     const synthesis = await memorySynthesis.synthesizeForChat(userId, conversationHistory);
+    console.log(`   Phase: ${synthesis.phase}, Authority: ${synthesis.voiceCalibration.authority}`);
+    console.log(`   Data Quality: ${synthesis.voiceCalibration.dataQuality}, Intensity: ${synthesis.voiceCalibration.currentIntensity}`);
     
     const systemPrompt = this.buildSystemPrompt(synthesis.voiceCalibration, synthesis.phase);
     const userPrompt = this.buildChatPrompt(synthesis, userMessage);
@@ -619,6 +643,7 @@ Not to pressure you — to honour the standard you're building.`;
     
     // Log the generation
     await this.logGeneration(userId, "chat", synthesis, text);
+    console.log(`✅ [COACH ENGINE] Chat response generated successfully (${text.length} chars)`);
     
     return {
       text,

@@ -7,6 +7,7 @@ import { shortTermMemory } from "./short-term-memory.service";
 import OpenAI from "openai";
 
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
+const USE_V2_CHAT = process.env.USE_V2_CHAT !== "false";
 
 function getOpenAIClient() {
   if (process.env.NODE_ENV === "build" || process.env.RAILWAY_ENVIRONMENT === "build") return null;
@@ -116,6 +117,43 @@ Return ONLY valid JSON:
   }
 
   async nextMessage(userId: string, userInput: string) {
+    // 🧠 Route through CoachEngine if enabled
+    if (USE_V2_CHAT) {
+      try {
+        console.log(`🧠 [OS Chat] Routing to CoachEngine for ${userId.substring(0, 8)}...`);
+        const { aiServiceV2 } = await import("./ai.service.v2");
+        const conversationKey = `os_chat:${userId}`;
+        const rawHistory = await redis.get(conversationKey);
+        const history = rawHistory ? JSON.parse(rawHistory) : [];
+        
+        const conversationHistory = history.slice(-10).map((m: any) => ({
+          role: m.role,
+          content: m.content,
+        }));
+        
+        const aiMessage = await aiServiceV2.generateFutureYouReply(userId, userInput, conversationHistory);
+        
+        // Save to history
+        history.push({ role: "user", content: userInput, timestamp: new Date().toISOString() });
+        history.push({ role: "assistant", content: aiMessage, timestamp: new Date().toISOString() });
+        await redis.set(conversationKey, JSON.stringify(history.slice(-50)), "EX", 86400);
+        
+        const consciousness = await memoryIntelligence.buildUserConsciousness(userId);
+        const phase = consciousness.os_phase?.current_phase || "observer";
+        
+        console.log(`✅ [OS Chat] CoachEngine response delivered`);
+        return {
+          phase,
+          message: aiMessage,
+          suggestions: [], // CoachEngine doesn't generate habit suggestions inline
+        };
+      } catch (err) {
+        console.warn(`⚠️ [OS Chat] CoachEngine failed, falling back to legacy:`, err);
+        // Fall through to legacy implementation
+      }
+    }
+    
+    // LEGACY IMPLEMENTATION
     const openai = getOpenAIClient();
     if (!openai) {
       return { 

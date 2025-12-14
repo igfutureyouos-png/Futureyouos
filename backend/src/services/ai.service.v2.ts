@@ -1,14 +1,13 @@
 // =============================================================================
 // AI SERVICE V2 - COACH ENGINE BRIDGE
 // =============================================================================
-// This module provides a bridge between the existing ai.service.ts interface
-// and the new CoachEngine. It can be used to gradually migrate to the new system.
+// This is the ONLY bridge between production flows and CoachEngine.
+// All scheduler jobs and chat endpoints MUST route through this service.
 //
-// Usage:
-//   import { aiServiceV2 } from './ai.service.v2';
-//   const text = await aiServiceV2.generateMorningBrief(userId);
+// Feature flags: USE_V2_BRIEF, USE_V2_NUDGE, USE_V2_DEBRIEF, USE_V2_LETTER, USE_V2_CHAT
+// Fallback: Falls back to ai.service.ts (legacy) if CoachEngine fails or flag disabled
 //
-// The existing ai.service.ts can call these methods internally when ready.
+// DO NOT import CoachEngine directly from other services.
 // =============================================================================
 
 import { coachEngine, CoachOutput } from "./coach-engine.service";
@@ -16,6 +15,16 @@ import { deepUserModel } from "./deep-user-model.service";
 import { memorySynthesis } from "./memory-synthesis.service";
 import { prisma } from "../utils/db";
 import { semanticMemory } from "./semanticMemory.service";
+
+// =============================================================================
+// FEATURE FLAGS
+// =============================================================================
+
+const USE_V2_BRIEF = process.env.USE_V2_BRIEF !== "false";
+const USE_V2_NUDGE = process.env.USE_V2_NUDGE !== "false";
+const USE_V2_DEBRIEF = process.env.USE_V2_DEBRIEF !== "false";
+const USE_V2_LETTER = process.env.USE_V2_LETTER !== "false";
+const USE_V2_CHAT = process.env.USE_V2_CHAT !== "false";
 
 // =============================================================================
 // SERVICE CLASS
@@ -32,6 +41,11 @@ class AIServiceV2 {
    * Returns just the text string for backwards compatibility.
    */
   async generateMorningBrief(userId: string): Promise<string> {
+    if (!USE_V2_BRIEF) {
+      console.log(`🔀 V2_BRIEF disabled, routing to legacy`);
+      return this.getFallbackBrief(userId);
+    }
+    
     console.log(`🧠 V2 HIT - generateMorningBrief for ${userId.substring(0, 8)}...`);
     try {
       const result = await coachEngine.generateBrief(userId);
@@ -64,6 +78,11 @@ class AIServiceV2 {
    * Returns just the text string for backwards compatibility.
    */
   async generateNudge(userId: string, reason: string): Promise<string> {
+    if (!USE_V2_NUDGE) {
+      console.log(`🔀 V2_NUDGE disabled, routing to legacy`);
+      return this.getFallbackNudge(userId);
+    }
+    
     console.log(`🧠 V2 HIT - generateNudge for ${userId.substring(0, 8)}... (reason: ${reason})`);
     try {
       // Parse the reason to extract trigger type and severity
@@ -108,6 +127,11 @@ class AIServiceV2 {
    * Returns just the text string for backwards compatibility.
    */
   async generateEveningDebrief(userId: string): Promise<string> {
+    if (!USE_V2_DEBRIEF) {
+      console.log(`🔀 V2_DEBRIEF disabled, routing to legacy`);
+      return this.getFallbackDebrief(userId);
+    }
+    
     console.log(`🧠 V2 HIT - generateEveningDebrief for ${userId.substring(0, 8)}...`);
     try {
       const result = await coachEngine.generateDebrief(userId);
@@ -139,8 +163,15 @@ class AIServiceV2 {
    * Returns just the text string for backwards compatibility.
    */
   async generateWeeklyLetter(userId: string): Promise<string> {
+    if (!USE_V2_LETTER) {
+      console.log(`🔀 V2_LETTER disabled, routing to legacy`);
+      return this.getFallbackLetter(userId);
+    }
+    
+    console.log(`🧠 V2 HIT - generateWeeklyLetter for ${userId.substring(0, 8)}...`);
     try {
       const result = await coachEngine.generateWeeklyLetter(userId);
+      console.log(`✅ V2 SUCCESS - Letter generated with authority: ${result.metadata.authority}, state: ${result.metadata.executionState}`);
       
       // Store in semantic memory
       await this.storeInSemanticMemory(userId, "letter", result);
@@ -172,12 +203,19 @@ class AIServiceV2 {
     userMessage: string,
     conversationHistory: Array<{ role: string; content: string }> = []
   ): Promise<string> {
+    if (!USE_V2_CHAT) {
+      console.log(`🔀 V2_CHAT disabled, routing to legacy`);
+      return this.getFallbackChat(userId);
+    }
+    
+    console.log(`🧠 V2 HIT - generateFutureYouReply for ${userId.substring(0, 8)}...`);
     try {
       const result = await coachEngine.generateChatResponse(
         userId,
         userMessage,
         conversationHistory
       );
+      console.log(`✅ V2 SUCCESS - Chat response generated with authority: ${result.metadata.authority}`);
       
       return result.text;
     } catch (error) {

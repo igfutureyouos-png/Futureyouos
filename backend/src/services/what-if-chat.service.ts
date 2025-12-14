@@ -1,6 +1,8 @@
 import { prisma } from "../utils/db";
 import { redis } from "../utils/redis";
 import { memoryService } from "./memory.service";
+import { deepUserModel } from "./deep-user-model.service";
+import { semanticMemory } from "./semanticMemory.service";
 import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -490,18 +492,27 @@ export class WhatIfChatService {
     sources?: string[];
   }> {
     // Get user context (with fallback if Redis fails)
-    let identity, ctx, history;
+    let identity, ctx, history, userModel, recentMemories;
     try {
-      [identity, ctx, history] = await Promise.all([
+      [identity, ctx, history, userModel, recentMemories] = await Promise.all([
         memoryService.getIdentityFacts(userId),
         memoryService.getUserContext(userId),
         this.getConversationHistory(userId),
+        // 🧠 NEW: Load shared user context from AI OS brain
+        deepUserModel.buildDeepUserModel(userId).catch(() => null),
+        semanticMemory.queryMemories({
+          userId,
+          query: userMessage,
+          limit: 5,
+        }).catch(() => []),
       ]);
     } catch (error) {
       // Silent fail - Redis errors are handled gracefully
       identity = { name: "User", purpose: "", coreValues: [], burningQuestion: "" };
       ctx = { habitSummaries: [], events: [], recentGoals: [] };
       history = [];
+      userModel = null;
+      recentMemories = [];
     }
 
     // Select system prompt based on preset (default to habit-master)
@@ -517,7 +528,7 @@ export class WhatIfChatService {
 
     const conversationType = this.detectConversationType(userMessage, ctx.habitSummaries);
 
-    // Build context
+    // Build context (now includes AI OS brain context)
     const contextString = `
 USER PROFILE:
 Name: ${identity.name}
@@ -530,13 +541,22 @@ Active Habits (for stacking): ${ctx.habitSummaries.filter(h => h.streak > 0).map
 Strongest Habit (use as anchor): ${ctx.habitSummaries.sort((a,b) => b.streak - a.streak)[0]?.title || "none"}
 Struggling With: ${ctx.habitSummaries.filter(h => h.streak === 0 && h.ticks30d > 5).map(h => `${h.title} (tried ${h.ticks30d} times, gave up)`).join(", ") || "none"}
 
+AI OS BRAIN CONTEXT (from shared memory):
+${userModel ? `
+- Current Phase: ${userModel.phase}
+- Days in System: ${userModel.daysInSystem}
+- Behavioral Fingerprint: ${userModel.behavioralFingerprint?.recoveryStyle}, ${userModel.behavioralFingerprint?.challengeResponse}
+- Key Patterns: ${userModel.behavioralFingerprint?.celebrationTrap ? "celebration trap detected" : ""}
+- Recent Focus: ${recentMemories?.map((m: any) => m.text.slice(0, 80)).join(" | ") || "none"}
+` : "- No deep model available yet"}
+
 CONVERSATION TYPE: ${conversationType.type}
 ${conversationType.habit ? `MENTIONED HABIT: ${conversationType.habit.title} (streak: ${conversationType.habit.streak}, 30d ticks: ${conversationType.habit.ticks30d})` : ""}
 
 CONVERSATION HISTORY (last 6 exchanges):
 ${history.slice(-12).map((m: any) => `${m.role}: ${m.content}`).join("\n")}
 
-TASK: Generate cinematic, evidence-based responses. Cite peer-reviewed studies naturally.
+TASK: Generate cinematic, evidence-based responses. Cite peer-reviewed studies naturally. Use AI OS brain context to provide coherent advice aligned with their current journey.
 `;
 
     // Add user message to history with preset
