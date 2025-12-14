@@ -235,7 +235,7 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF18181B), // Dark background (not transparent)
+      backgroundColor: Colors.black, // ✅ Pure black like other premium screens
       resizeToAvoidBottomInset: false,
       body: !_initialized
           ? Center(
@@ -278,28 +278,69 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                               child: Center(
                                 child: Column(
                                   children: [
+                                    const SizedBox(height: AppSpacing.xxl),
+                                    // ✅ Cinematic empty state with glow
+                                    Container(
+                                      width: 80,
+                                      height: 80,
+                                      decoration: BoxDecoration(
+                                        gradient: AppColors.emeraldGradient,
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: AppColors.emerald.withOpacity(0.5),
+                                            blurRadius: 40,
+                                            spreadRadius: 10,
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Icon(
+                                        LucideIcons.sparkles,
+                                        size: 40,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                        .animate(onPlay: (controller) => controller.repeat(reverse: true))
+                                        .scale(
+                                          begin: const Offset(1.0, 1.0),
+                                          end: const Offset(1.1, 1.1),
+                                          duration: 2000.ms,
+                                        )
+                                        .then()
+                                        .shimmer(duration: 1500.ms),
                                     const SizedBox(height: AppSpacing.xl),
-                                    Icon(
-                                      LucideIcons.messageCircle,
-                                      size: 48,
-                                      color: AppColors.emerald.withOpacity(0.5),
-                                    ),
-                                    const SizedBox(height: AppSpacing.lg),
-                                    Text(
-                                      'Your OS is ready',
-                                      style: AppTextStyles.h3.copyWith(
-                                        color: AppColors.textPrimary,
+                                    ShaderMask(
+                                      shaderCallback: (bounds) => AppColors.emeraldGradient.createShader(bounds),
+                                      child: Text(
+                                        'Your OS is Online',
+                                        style: AppTextStyles.h2.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w900,
+                                        ),
                                       ),
                                     ),
-                                    const SizedBox(height: AppSpacing.sm),
+                                    const SizedBox(height: AppSpacing.md),
                                     Text(
-                                      'Start a conversation with your AI Operating System',
+                                      'Ask me anything about your habits, goals, or life',
                                       style: AppTextStyles.body.copyWith(
                                         color: AppColors.textSecondary,
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
                                     const SizedBox(height: AppSpacing.xl),
+                                    // ✅ Suggested prompts
+                                    Wrap(
+                                      spacing: AppSpacing.sm,
+                                      runSpacing: AppSpacing.sm,
+                                      alignment: WrapAlignment.center,
+                                      children: [
+                                        _buildSuggestionChip('Why did I skip today?'),
+                                        _buildSuggestionChip('What\'s my biggest pattern?'),
+                                        _buildSuggestionChip('Am I making progress?'),
+                                        _buildSuggestionChip('What should I focus on?'),
+                                      ],
+                                    ),
+                                    const SizedBox(height: AppSpacing.xxl),
                                   ],
                                 ),
                               ),
@@ -318,7 +359,7 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                             ),
                           ),
 
-                      // Loading indicator
+                      // ✅ Cinematic loading indicator
                       if (_isLoading)
                         SliverToBoxAdapter(
                           child: Padding(
@@ -326,20 +367,36 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                             child: Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.all(AppSpacing.md),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.md,
+                                    vertical: AppSpacing.sm,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.glassBackground,
-                                    borderRadius: BorderRadius.circular(AppBorderRadius.lg),
-                                    border: Border.all(
-                                      color: AppColors.emerald.withOpacity(0.2),
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        AppColors.emerald.withOpacity(0.15),
+                                        AppColors.emerald.withOpacity(0.05),
+                                      ],
                                     ),
+                                    borderRadius: BorderRadius.circular(AppBorderRadius.xl),
+                                    border: Border.all(
+                                      color: AppColors.emerald.withOpacity(0.4),
+                                      width: 1.5,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.emerald.withOpacity(0.2),
+                                        blurRadius: 16,
+                                        spreadRadius: 2,
+                                      ),
+                                    ],
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       SizedBox(
-                                        width: 12,
-                                        height: 12,
+                                        width: 16,
+                                        height: 16,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
                                           valueColor: AlwaysStoppedAnimation<Color>(AppColors.emerald),
@@ -347,14 +404,17 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                                       ),
                                       const SizedBox(width: AppSpacing.sm),
                                       Text(
-                                        'Thinking...',
-                                        style: AppTextStyles.caption.copyWith(
-                                          color: AppColors.textTertiary,
+                                        'OS processing...',
+                                        style: AppTextStyles.body.copyWith(
+                                          color: AppColors.emerald,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                     ],
                                   ),
-                                ),
+                                )
+                                    .animate(onPlay: (controller) => controller.repeat())
+                                    .shimmer(duration: 1500.ms, color: AppColors.emerald.withOpacity(0.3)),
                               ],
                             ),
                           ),
@@ -364,7 +424,7 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                       SliverFillRemaining(
                         hasScrollBody: false,
                         child: Container(
-                          color: const Color(0xFF18181B), // Match background
+                          color: Colors.black, // Match background
                           child: const SizedBox(height: 200), // Minimum height
                         ),
                       ),
@@ -380,10 +440,17 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF18181B),
+                      color: Colors.black,
                       border: Border(
-                        top: BorderSide(color: AppColors.emerald.withOpacity(0.2)),
+                        top: BorderSide(color: AppColors.emerald.withOpacity(0.3)),
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.emerald.withOpacity(0.1),
+                          blurRadius: 20,
+                          offset: const Offset(0, -4),
+                        ),
+                      ],
                     ),
                     child: Row(
                       children: [
@@ -417,7 +484,7 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                         ),
                         const SizedBox(width: AppSpacing.sm),
                         
-                        // 📤 SEND BUTTON
+                        // 📤 SEND BUTTON - Animated pulse
                         GestureDetector(
                           onTap: _sendMessage,
                           child: Container(
@@ -428,8 +495,8 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.emerald.withOpacity(0.3),
-                                  blurRadius: 12,
+                                  color: AppColors.emerald.withOpacity(0.5),
+                                  blurRadius: 20,
                                   offset: const Offset(0, 4),
                                 ),
                               ],
@@ -439,7 +506,9 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                               color: Colors.white,
                               size: 20,
                             ),
-                          ),
+                          )
+                              .animate(onPlay: (controller) => controller.repeat(reverse: true))
+                              .shimmer(duration: 2000.ms, color: Colors.white.withOpacity(0.3)),
                         ),
                       ],
                     ),
@@ -452,11 +521,11 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
 
   Widget _buildHeader() {
     return SliverAppBar(
-      expandedHeight: 100,
+      expandedHeight: 120,
       floating: true,
       snap: true,
       pinned: false,
-      backgroundColor: const Color(0xFF18181B),
+      backgroundColor: Colors.black,
       elevation: 0,
       automaticallyImplyLeading: false,
       flexibleSpace: FlexibleSpaceBar(
@@ -468,51 +537,127 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
             AppSpacing.md,
           ),
           decoration: BoxDecoration(
-            color: const Color(0xFF18181B),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black,
+                AppColors.emerald.withOpacity(0.03),
+              ],
+            ),
             border: Border(
               bottom: BorderSide(
-                color: AppColors.emerald.withOpacity(0.2),
+                color: AppColors.emerald.withOpacity(0.3),
+                width: 1,
               ),
             ),
           ),
           child: Row(
             children: [
+              // ✅ Animated breathing brain icon
               Container(
-                width: 48,
-                height: 48,
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
                   gradient: AppColors.emeraldGradient,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.emerald.withOpacity(0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                      color: AppColors.emerald.withOpacity(0.6),
+                      blurRadius: 24,
+                      spreadRadius: 2,
                     ),
                   ],
                 ),
                 child: const Icon(
                   LucideIcons.brain,
                   color: Colors.white,
-                  size: 24,
+                  size: 28,
                 ),
-              ),
+              )
+                  .animate(onPlay: (controller) => controller.repeat(reverse: true))
+                  .scale(
+                    begin: const Offset(1.0, 1.0),
+                    end: const Offset(1.08, 1.08),
+                    duration: 2000.ms,
+                    curve: Curves.easeInOut,
+                  )
+                  .then()
+                  .shimmer(duration: 1500.ms, color: Colors.white.withOpacity(0.2)),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      'AI Operating System',
-                      style: AppTextStyles.h3.copyWith(fontSize: 18),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Phase: $_currentPhase • Always watching',
-                      style: AppTextStyles.captionSmall.copyWith(
-                        color: AppColors.emerald,
+                    ShaderMask(
+                      shaderCallback: (bounds) => AppColors.emeraldGradient.createShader(bounds),
+                      child: Text(
+                        'AI OPERATING SYSTEM',
+                        style: AppTextStyles.h3.copyWith(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                          color: Colors.white,
+                        ),
                       ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            gradient: AppColors.emeraldGradient,
+                            borderRadius: BorderRadius.circular(AppBorderRadius.sm),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.emerald.withOpacity(0.3),
+                                blurRadius: 8,
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            _currentPhase.toUpperCase(),
+                            style: AppTextStyles.captionSmall.copyWith(
+                              color: Colors.black,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 10,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: AppColors.emerald,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.emerald,
+                                blurRadius: 8,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                        )
+                            .animate(onPlay: (controller) => controller.repeat())
+                            .fadeOut(duration: 1000.ms)
+                            .then()
+                            .fadeIn(duration: 1000.ms),
+                        const SizedBox(width: 6),
+                        Text(
+                          'ACTIVE',
+                          style: AppTextStyles.captionSmall.copyWith(
+                            color: AppColors.emerald,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 10,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -659,14 +804,22 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                 border: Border.all(
                   color: AppColors.emerald.withOpacity(0.3),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.emerald.withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: SelectableText(
                 message.text,
                 style: AppTextStyles.body.copyWith(
                   color: Colors.black,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ),
+            ).animate().fadeIn(duration: 300.ms).slideX(begin: 0.1, end: 0),
           ),
         ],
       ),
@@ -683,11 +836,26 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
             child: Container(
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: AppColors.glassBackground,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.glassBackground,
+                    AppColors.emerald.withOpacity(0.05),
+                  ],
+                ),
                 borderRadius: BorderRadius.circular(AppBorderRadius.lg),
                 border: Border.all(
-                  color: AppColors.emerald.withOpacity(0.2),
+                  color: AppColors.emerald.withOpacity(0.3),
+                  width: 1.5,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.emerald.withOpacity(0.1),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -696,6 +864,7 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                     message.text,
                     style: AppTextStyles.body.copyWith(
                       color: AppColors.textPrimary,
+                      height: 1.6,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -715,7 +884,7 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                         icon: Icon(
                           LucideIcons.copy,
                           size: 14,
-                          color: AppColors.textTertiary.withOpacity(0.6),
+                          color: AppColors.emerald.withOpacity(0.6),
                         ),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
@@ -724,11 +893,44 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                   ),
                 ],
               ),
-            ),
+            ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.1, end: 0),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildSuggestionChip(String text) {
+    return GestureDetector(
+      onTap: () {
+        _inputController.text = text;
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.emerald.withOpacity(0.1),
+              AppColors.emerald.withOpacity(0.05),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(AppBorderRadius.full),
+          border: Border.all(
+            color: AppColors.emerald.withOpacity(0.3),
+          ),
+        ),
+        child: Text(
+          text,
+          style: AppTextStyles.captionSmall.copyWith(
+            color: AppColors.emerald,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    ).animate().fadeIn(delay: 200.ms).scale(begin: const Offset(0.8, 0.8));
   }
 
   String _formatTime(DateTime timestamp) {
