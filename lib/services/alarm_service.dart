@@ -198,13 +198,55 @@ class AlarmService {
 
   /// Cancel all alarms for a habit
   static Future<void> cancelAlarm(String habitId) async {
-    debugPrint('🗑️ Cancelling alarms for habit: $habitId');
+    debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    debugPrint('🗑️ CANCELLING ALARMS for habit: $habitId');
+    
+    // Get pending notifications BEFORE cancellation
+    final pendingBefore = await _notifications.pendingNotificationRequests();
+    final habitAlarmIds = <int>[];
+    
     for (int day = 0; day < 7; day++) {
       final id = _getAlarmId(habitId, day);
-      await _notifications.cancel(id);
-      _scheduledAlarms.remove(id); // 🔥 keep map in sync
+      habitAlarmIds.add(id);
     }
-    debugPrint('✅ All alarms cancelled for: $habitId');
+    
+    final relevantBefore = pendingBefore.where((n) => habitAlarmIds.contains(n.id)).toList();
+    debugPrint('📊 Found ${relevantBefore.length} pending alarms for this habit');
+    
+    // Cancel each alarm with error handling
+    int successCount = 0;
+    int failCount = 0;
+    
+    for (int day = 0; day < 7; day++) {
+      final id = _getAlarmId(habitId, day);
+      try {
+        await _notifications.cancel(id);
+        _scheduledAlarms.remove(id); // 🔥 keep map in sync
+        successCount++;
+        debugPrint('   ✅ Cancelled alarm ID $id (${_getDayName(day)})');
+      } catch (e) {
+        failCount++;
+        debugPrint('   ❌ Failed to cancel alarm ID $id (${_getDayName(day)}): $e');
+      }
+    }
+    
+    // Verify cancellation at OS level
+    final pendingAfter = await _notifications.pendingNotificationRequests();
+    final relevantAfter = pendingAfter.where((n) => habitAlarmIds.contains(n.id)).toList();
+    
+    debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    debugPrint('📊 Cancellation Summary for habit: $habitId');
+    debugPrint('   ✅ Successfully cancelled: $successCount');
+    debugPrint('   ❌ Failed to cancel: $failCount');
+    debugPrint('   📋 Pending BEFORE: ${relevantBefore.length}');
+    debugPrint('   📋 Pending AFTER: ${relevantAfter.length}');
+    debugPrint('   ${relevantAfter.isEmpty ? "✅ All alarms verified cancelled!" : "⚠️ WARNING: ${relevantAfter.length} alarms still pending!"}');
+    debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    
+    // Throw error if verification failed
+    if (relevantAfter.isNotEmpty) {
+      throw Exception('Failed to cancel all alarms: ${relevantAfter.length} still pending');
+    }
   }
 
   /// Cancel all alarms
@@ -329,6 +371,28 @@ class AlarmService {
   /// Check if service is initialized
   static bool isInitialized() {
     return _initialized;
+  }
+
+  /// Verify that a specific habit's alarms are fully cancelled
+  static Future<bool> verifyAlarmCancelled(String habitId) async {
+    final habitAlarmIds = <int>[];
+    for (int day = 0; day < 7; day++) {
+      habitAlarmIds.add(_getAlarmId(habitId, day));
+    }
+    
+    final pending = await _notifications.pendingNotificationRequests();
+    final stillPending = pending.where((n) => habitAlarmIds.contains(n.id)).toList();
+    
+    if (stillPending.isNotEmpty) {
+      debugPrint('⚠️ verifyAlarmCancelled FAILED for $habitId: ${stillPending.length} alarms still pending');
+      for (final alarm in stillPending) {
+        debugPrint('   - Pending alarm ID: ${alarm.id}');
+      }
+      return false;
+    }
+    
+    debugPrint('✅ verifyAlarmCancelled SUCCESS for $habitId: All alarms cleared');
+    return true;
   }
 
   /// 🔍 Expose scheduled alarms for AlarmTestScreen
