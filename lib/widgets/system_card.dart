@@ -177,6 +177,11 @@ class _SystemCardState extends State<SystemCard> {
                         ),
                         // ✅ FIX 4: Stunning progress circle (only on Home page - when onToggleHabit is provided)
                         if (widget.onToggleHabit != null) _buildProgressRing(completion, widget.system.gradientColors.first),
+                        // ✅ System Streak Badge (small, clean)
+                        if (widget.onToggleHabit != null) ...[
+                          const SizedBox(width: 8),
+                          _buildSystemStreakBadge(),
+                        ],
                         // ✅ NEW: Collapse/Expand button (only on Home page)
                         if (widget.onToggleHabit != null) ...[
                           const SizedBox(width: 8),
@@ -283,6 +288,44 @@ class _SystemCardState extends State<SystemCard> {
     );
   }
 
+  Widget _buildSystemStreakBadge() {
+    // Calculate system streak: minimum streak of all habits in the system
+    final habitStreaks = widget.habits.map((h) => h.streak).toList();
+    final systemStreak = habitStreaks.isEmpty ? 0 : habitStreaks.reduce((a, b) => a < b ? a : b);
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            LucideIcons.flame,
+            size: 14,
+            color: systemStreak > 0 ? AppColors.warning : Colors.white.withOpacity(0.5),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$systemStreak',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHabitsGrid() {
     // ✅ FIX 1: One habit per line for better readability
     return Column(
@@ -376,6 +419,28 @@ class _SystemCardState extends State<SystemCard> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
+            ),
+            // Streak indicator (small, clean)
+            const SizedBox(width: 6),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  LucideIcons.flame,
+                  size: 10,
+                  color: habit.streak > 0 ? AppColors.warning : Colors.white.withOpacity(0.4),
+                ),
+                const SizedBox(width: 2),
+                Text(
+                  '${habit.streak}',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ],
             ),
             // Time if available (show in both modes)
             if (habit.time != null && habit.time!.isNotEmpty) ...[

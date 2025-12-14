@@ -54,9 +54,49 @@ export class CoachService {
         });
       });
       await Promise.allSettled(writes);
+      
+      // ✅ CRITICAL: Update habit streaks in database
+      const streakUpdates = completions.map((c) => {
+        if (c.done) {
+          // Increment streak and update lastTick
+          return prisma.habit.update({
+            where: { id: c.habitId },
+            data: {
+              streak: { increment: 1 },
+              lastTick: new Date(),
+            },
+          }).catch((err) => {
+            console.error(`Failed to update streak for habit ${c.habitId}:`, err);
+            return null;
+          });
+        } else {
+          // Reset streak when uncompleting
+          return prisma.habit.update({
+            where: { id: c.habitId },
+            data: {
+              streak: 0,
+              lastTick: null,
+            },
+          }).catch((err) => {
+            console.error(`Failed to reset streak for habit ${c.habitId}:`, err);
+            return null;
+          });
+        }
+      });
+      await Promise.allSettled(streakUpdates);
     }
 
-    return { ok: true, logged: completions?.length ?? 0 };
+    // ✅ Return updated streaks for iOS sync
+    const updatedHabits = await prisma.habit.findMany({
+      where: { userId },
+      select: { id: true, streak: true, lastTick: true },
+    });
+
+    return { 
+      ok: true, 
+      logged: completions?.length ?? 0,
+      streaks: updatedHabits, // ← iOS can use this to update local habits
+    };
   }
 
   /**
