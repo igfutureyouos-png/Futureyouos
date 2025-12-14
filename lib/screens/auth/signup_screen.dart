@@ -75,24 +75,19 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Account created successfully!'),
+            content: Text('✅ Account created successfully! Loading your data...'),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 2),
           ),
         );
         
-        // Wait for initial sync before navigating
-        try {
-          await _initializeAfterLogin();
-        } catch (syncError) {
-          debugPrint('⚠️ Sync failed but continuing: $syncError');
-          // Don't block navigation if sync fails
-        }
+        // ✅ FIX: Initialize sync in background WITHOUT blocking navigation
+        _initializeAfterLogin().catchError((syncError) {
+          debugPrint('⚠️ Background sync failed: $syncError');
+        });
         
-        // Navigation happens automatically via auth state listener in main.dart
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const MainScreen()),
-        );
+        // ✅ Navigation happens automatically via auth state listener in main.dart
+        // DO NOT manually navigate here - let the AppRouter handle it
       }
     } catch (e) {
       if (mounted) {
@@ -135,24 +130,19 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Account created successfully!'),
+            content: Text('✅ Account created successfully! Loading your data...'),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 2),
           ),
         );
         
-        // Wait for initial sync before navigating
-        try {
-          await _initializeAfterLogin();
-        } catch (syncError) {
-          debugPrint('⚠️ Sync failed but continuing: $syncError');
-          // Don't block navigation if sync fails
-        }
+        // ✅ FIX: Initialize sync in background WITHOUT blocking navigation
+        _initializeAfterLogin().catchError((syncError) {
+          debugPrint('⚠️ Background sync failed: $syncError');
+        });
         
-        // Navigation happens automatically via auth state listener in main.dart
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const MainScreen()),
-        );
+        // ✅ Navigation happens automatically via auth state listener in main.dart
+        // DO NOT manually navigate here - let the AppRouter handle it
       } else {
         // User cancelled sign-in
         if (mounted) {
@@ -203,12 +193,22 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       final result = await authService.signInWithApple();
 
       if (result != null && mounted) {
-        // Wait for initial sync before navigating
-        await _initializeAfterLogin();
-        
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const MainScreen()),
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Account created successfully! Loading your data...'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
         );
+        
+        // ✅ FIX: Initialize sync in background WITHOUT blocking navigation
+        _initializeAfterLogin().catchError((syncError) {
+          debugPrint('⚠️ Background sync failed: $syncError');
+        });
+        
+        // ✅ Navigation happens automatically via auth state listener in main.dart
+        // DO NOT manually navigate here - let the AppRouter handle it
       }
     } catch (e) {
       if (mounted) {
