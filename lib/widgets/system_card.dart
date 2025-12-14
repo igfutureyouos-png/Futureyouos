@@ -118,6 +118,14 @@ class _SystemCardState extends State<SystemCard> {
                 child: _AnimatedParticles(),
               ),
 
+              // ✅ Streak Badge - Top Right Corner (above chevron)
+              if (widget.onToggleHabit != null)
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: _buildSystemStreakBadge(),
+                ),
+
               // Content
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
@@ -177,11 +185,6 @@ class _SystemCardState extends State<SystemCard> {
                         ),
                         // ✅ FIX 4: Stunning progress circle (only on Home page - when onToggleHabit is provided)
                         if (widget.onToggleHabit != null) _buildProgressRing(completion, widget.system.gradientColors.first),
-                        // ✅ System Streak Badge (small, clean)
-                        if (widget.onToggleHabit != null) ...[
-                          const SizedBox(width: 8),
-                          _buildSystemStreakBadge(),
-                        ],
                         // ✅ NEW: Collapse/Expand button (only on Home page)
                         if (widget.onToggleHabit != null) ...[
                           const SizedBox(width: 8),
@@ -419,28 +422,6 @@ class _SystemCardState extends State<SystemCard> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-            ),
-            // Streak indicator (small, clean)
-            const SizedBox(width: 6),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  LucideIcons.flame,
-                  size: 10,
-                  color: habit.streak > 0 ? AppColors.warning : Colors.white.withOpacity(0.4),
-                ),
-                const SizedBox(width: 2),
-                Text(
-                  '${habit.streak}',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-              ],
             ),
             // Time if available (show in both modes)
             if (habit.time != null && habit.time!.isNotEmpty) ...[

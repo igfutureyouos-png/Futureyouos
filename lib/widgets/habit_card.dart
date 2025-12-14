@@ -171,26 +171,6 @@ class _HabitCardState extends State<HabitCard>
                         ),
                       ),
                     ),
-                    if (widget.habit.streak > 0) ...[
-                      const SizedBox(width: AppSpacing.sm),
-                      Row(
-                        children: [
-                          const Icon(
-                            LucideIcons.flame,
-                            size: 12,
-                            color: AppColors.warning,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            '${widget.habit.streak}',
-                            style: AppTextStyles.captionSmall.copyWith(
-                              color: AppColors.warning,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
                   ],
                 ),
               ],
@@ -201,6 +181,40 @@ class _HabitCardState extends State<HabitCard>
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // ✅ Streak indicator - Left of toggle
+              if (widget.habit.streak > 0) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(AppBorderRadius.sm),
+                    border: Border.all(
+                      color: AppColors.warning.withOpacity(0.3),
+                      width: 0.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        LucideIcons.flame,
+                        size: 14,
+                        color: AppColors.warning,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${widget.habit.streak}',
+                        style: AppTextStyles.captionSmall.copyWith(
+                          color: AppColors.warning,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+              ],
               // Toggle button
               GestureDetector(
                 onTap: _handleToggle,
