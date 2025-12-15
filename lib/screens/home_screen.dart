@@ -546,8 +546,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                         ],
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.xxl),
-                  ],
+                        const SizedBox(height: AppSpacing.xxl),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             
