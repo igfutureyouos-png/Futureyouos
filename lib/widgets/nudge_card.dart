@@ -132,6 +132,9 @@ class _NudgeCardState extends State<NudgeCard>
       // Use user's selected voice from settings
       final textToSpeak = '${widget.message.title}. ${widget.message.body}';
       
+      debugPrint('🔊 [TTS DEBUG] Starting nudge playback for message: ${widget.message.id}');
+      debugPrint('🔊 [TTS DEBUG] Text length: ${textToSpeak.length} chars');
+      
       final success = await ElevenLabsTTSService.speakText(
         text: textToSpeak,
         // voiceKey: null, // Use user's selected voice
@@ -140,11 +143,27 @@ class _NudgeCardState extends State<NudgeCard>
       if (success) {
         debugPrint('✅ ElevenLabs nudge TTS successful');
       } else {
-        debugPrint('❌ ElevenLabs nudge replay failed - NO FALLBACK');
+        debugPrint('❌ ElevenLabs nudge failed - Check: 1) Backend running? 2) ElevenLabs API key valid? 3) Network connection?');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⚠️ Audio playback failed. Check your connection.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
       }
       
     } catch (e) {
-      debugPrint('❌ TTS failed: $e');
+      debugPrint('❌ Nudge TTS failed with exception: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Audio error: ${e.toString().substring(0, 50)}...'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {

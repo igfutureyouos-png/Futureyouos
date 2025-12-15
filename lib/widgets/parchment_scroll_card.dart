@@ -166,6 +166,9 @@ class _ParchmentScrollCardState extends State<ParchmentScrollCard>
       final message = widget.messages.first;
       final textToSpeak = '${message.title}. ${message.body}';
       
+      debugPrint('🔊 [TTS DEBUG] Starting playback for message: ${message.id}');
+      debugPrint('🔊 [TTS DEBUG] Text length: ${textToSpeak.length} chars');
+      
       // Use user's selected voice from settings
       // Try ElevenLabs first
       final success = await ElevenLabsTTSService.speakText(
@@ -176,11 +179,28 @@ class _ParchmentScrollCardState extends State<ParchmentScrollCard>
       if (success) {
         debugPrint('✅ ElevenLabs TTS successful');
       } else {
-        debugPrint('❌ ElevenLabs failed - NO FALLBACK (using ElevenLabs only)');
+        debugPrint('❌ ElevenLabs failed - Check: 1) Backend running? 2) ElevenLabs API key valid? 3) Network connection?');
+        // Show user-friendly error
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⚠️ Audio playback failed. Check your connection.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
       }
       
     } catch (e) {
-      debugPrint('❌ TTS failed: $e');
+      debugPrint('❌ TTS failed with exception: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Audio error: ${e.toString().substring(0, 50)}...'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
