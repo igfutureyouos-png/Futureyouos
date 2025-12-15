@@ -736,6 +736,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                       ],
                     ),
                   ),
+                  // ✅ Streak flame (LEFT of checkmark)
+                  if (habit.streak > 0) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(AppBorderRadius.sm),
+                        border: Border.all(
+                          color: AppColors.warning.withOpacity(0.3),
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            LucideIcons.flame,
+                            size: 14,
+                            color: AppColors.warning,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${habit.streak}',
+                            style: AppTextStyles.captionSmall.copyWith(
+                              color: AppColors.warning,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                  ],
                   // Checkmark icon
                   Icon(
                     isDone ? LucideIcons.checkCircle2 : LucideIcons.circle,

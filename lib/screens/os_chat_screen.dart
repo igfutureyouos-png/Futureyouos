@@ -327,7 +327,7 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                                     ),
                                     const SizedBox(height: AppSpacing.md),
                                     Text(
-                                      'Ask me anything about your habits, goals, or life',
+                                      'I watch your patterns. I keep you accountable.\nI remember everything. Let\'s talk.',
                                       style: AppTextStyles.body.copyWith(
                                         color: AppColors.textSecondary,
                                       ),
