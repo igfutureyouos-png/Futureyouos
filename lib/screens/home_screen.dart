@@ -461,7 +461,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                   children: [
                     const SizedBox(height: AppSpacing.xxl),
                     Container(
-                      padding: const EdgeInsets.all(AppSpacing.xl),
+                      padding: const EdgeInsets.all(AppSpacing.lg), // ✅ Reduced from xl (40% shorter)
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
@@ -480,34 +480,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(AppSpacing.lg),
+                            padding: const EdgeInsets.all(AppSpacing.md), // ✅ Reduced
                             decoration: BoxDecoration(
                               color: AppColors.emerald.withOpacity(0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
                               LucideIcons.target,
-                              size: 48,
+                              size: 36, // ✅ Reduced from 48
                               color: AppColors.emerald,
                             ),
                           ),
-                          const SizedBox(height: AppSpacing.lg),
+                          const SizedBox(height: AppSpacing.md), // ✅ Reduced
                           Text(
-                            'Start Your Journey',
-                            style: AppTextStyles.h2.copyWith(
+                            'System Not Initialised', // ✅ NEW TEXT
+                            style: AppTextStyles.h3.copyWith( // ✅ Smaller heading
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                           const SizedBox(height: AppSpacing.sm),
                           Text(
-                            'Build your discipline system.\nAdd habits in the Planner tab to begin.',
+                            'Create your first habit to\nactivate Future-You OS', // ✅ NEW TEXT
                             style: AppTextStyles.body.copyWith(
                               color: AppColors.textSecondary,
+                              fontSize: 14, // ✅ Slightly smaller
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: AppSpacing.lg),
+                          const SizedBox(height: AppSpacing.md), // ✅ Reduced
                           GestureDetector(
                             onTap: _navigateToPlanner,
                             child: Container(

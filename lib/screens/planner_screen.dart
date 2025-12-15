@@ -779,7 +779,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Container(
-              padding: const EdgeInsets.all(AppSpacing.xl),
+              padding: const EdgeInsets.all(AppSpacing.lg), // ✅ Reduced from xl (40% shorter)
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -799,21 +799,21 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    padding: const EdgeInsets.all(AppSpacing.md), // ✅ Reduced
                     decoration: BoxDecoration(
                       color: const Color(0xFFFF6B35).withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       LucideIcons.target,
-                      size: 48,
+                      size: 36, // ✅ Reduced from 48
                       color: const Color(0xFFFF6B35),
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: AppSpacing.md), // ✅ Reduced
                   Text(
                     'Build Your Systems',
-                    style: AppTextStyles.h2.copyWith(
+                    style: AppTextStyles.h3.copyWith( // ✅ Smaller heading
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w700,
                     ),
@@ -823,10 +823,11 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                     'No habits scheduled for this day.\nCreate powerful systems and habits to transform your future.',
                     style: AppTextStyles.body.copyWith(
                       color: AppColors.textSecondary,
+                      fontSize: 14, // ✅ Slightly smaller
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: AppSpacing.md), // ✅ Reduced
                   GestureDetector(
                     onTap: () => _tabController.animateTo(0), // Navigate to Add New tab
                     child: Container(
