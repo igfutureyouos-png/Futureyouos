@@ -279,7 +279,7 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                                 child: Column(
                                   children: [
                                     const SizedBox(height: AppSpacing.xxl),
-                                    // ✅ Cinematic empty state with glow
+                                    // ✅ Cinematic empty state with glow - BRAIN LOGO
                                     Container(
                                       width: 80,
                                       height: 80,
@@ -295,7 +295,7 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                                         ],
                                       ),
                                       child: const Icon(
-                                        LucideIcons.sparkles,
+                                        LucideIcons.brain,
                                         size: 40,
                                         color: Colors.white,
                                       ),
