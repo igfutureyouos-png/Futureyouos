@@ -53,6 +53,12 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
   void initState() {
     super.initState();
     _initializeMessages();
+    // ✅ Ensure scroll starts at top (show full header)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0);
+      }
+    });
   }
 
   @override
@@ -521,9 +527,9 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
 
   Widget _buildHeader() {
     return SliverAppBar(
-      expandedHeight: 120,
-      floating: false, // ✅ Changed: Don't float, stay visible on load
-      snap: false, // ✅ Changed: Smooth collapse, no snap
+      expandedHeight: 140, // ✅ Increased from 120 to fit all content
+      floating: false, // Don't float, stay visible on load
+      snap: false, // Smooth collapse, no snap
       pinned: false, // Still collapses when scrolling up
       backgroundColor: Colors.black,
       elevation: 0,
@@ -532,9 +538,9 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
         background: Container(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.lg,
-            AppSpacing.xl + 40,
+            AppSpacing.xl + 30, // ✅ Reduced from 40 to 30 (push up 10px)
             AppSpacing.lg,
-            AppSpacing.md,
+            AppSpacing.lg, // ✅ Increased from md to lg for more bottom space
           ),
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -588,9 +594,8 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center, // ✅ Center vertically for better layout
                   children: [
-                    const SizedBox(height: 8), // ✅ Push content up from bottom
                     ShaderMask(
                       shaderCallback: (bounds) => AppColors.emeraldGradient.createShader(bounds),
                       child: Text(
@@ -603,7 +608,7 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8), // ✅ Increased from 6 to 8 for better spacing
                     Row(
                       children: [
                         Container(
