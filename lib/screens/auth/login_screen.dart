@@ -127,8 +127,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           debugPrint('⚠️ Background sync failed: $syncError');
         });
         
-        // ✅ Navigation happens automatically via auth state listener in main.dart
-        // DO NOT manually navigate here - let the AppRouter handle it
+        // ✅ Wait a moment for auth state to propagate to AppRouter
+        await Future.delayed(const Duration(milliseconds: 100));
+        
+        // Navigation happens automatically via auth state listener in main.dart
       } else {
         // User cancelled sign-in
         if (mounted) {
@@ -193,8 +195,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           debugPrint('⚠️ Background sync failed: $syncError');
         });
         
-        // ✅ Navigation happens automatically via auth state listener in main.dart
-        // DO NOT manually navigate here - let the AppRouter handle it
+        // ✅ Wait a moment for auth state to propagate to AppRouter
+        await Future.delayed(const Duration(milliseconds: 100));
+        
+        // Navigation happens automatically via auth state listener in main.dart
       }
     } catch (e) {
       if (mounted) {
