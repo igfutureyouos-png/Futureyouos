@@ -588,8 +588,9 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
+                    const SizedBox(height: 8), // ✅ Push content up from bottom
                     ShaderMask(
                       shaderCallback: (bounds) => AppColors.emeraldGradient.createShader(bounds),
                       child: Text(
@@ -602,7 +603,7 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
                         Container(
