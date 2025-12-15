@@ -188,18 +188,21 @@ class _SystemCardState extends State<SystemCard> {
                         // ✅ NEW: Collapse/Expand button (only on Home page)
                         if (widget.onToggleHabit != null) ...[
                           const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: _toggleCollapsed,
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                _isCollapsed ? LucideIcons.chevronDown : LucideIcons.chevronUp,
-                                size: 18,
-                                color: Colors.white.withOpacity(0.9),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2), // ✅ Push down 2mm from streak flame
+                            child: GestureDetector(
+                              onTap: _toggleCollapsed,
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  _isCollapsed ? LucideIcons.chevronDown : LucideIcons.chevronUp,
+                                  size: 18,
+                                  color: Colors.white.withOpacity(0.9),
+                                ),
                               ),
                             ),
                           ),

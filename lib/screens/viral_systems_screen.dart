@@ -17,10 +17,8 @@ class ViralSystemsScreen extends ConsumerStatefulWidget {
 
 class _ViralSystemsScreenState extends ConsumerState<ViralSystemsScreen> {
   List<ViralSystem> get _availableSystems {
-    // ✅ Filter out systems chosen in the last 24 hours
-    return _allSystems.where((system) {
-      return !LocalStorageService.wasSystemRecentlyChosen(system.name);
-    }).toList();
+    // ✅ FIX: Keep ALL systems in library, even if user already added them
+    return _allSystems; // Don't filter - show all viral systems always
   }
   
     final List<ViralSystem> _allSystems = [

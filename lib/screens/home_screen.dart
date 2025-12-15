@@ -456,10 +456,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
             // Habit cards (System cards + Standalone habits)
             if (dayHabits.isEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: Column(
-                  children: [
-                    const SizedBox(height: AppSpacing.xxl),
+                padding: const EdgeInsets.only(top: 60), // ✅ Match planner layout
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    child: Column(
+                      children: [
                     Container(
                       padding: const EdgeInsets.all(AppSpacing.lg), // ✅ Reduced from xl (40% shorter)
                       decoration: BoxDecoration(
@@ -907,7 +910,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                           ),
                         ),
                       ),
-                  ],
+                      ],
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),

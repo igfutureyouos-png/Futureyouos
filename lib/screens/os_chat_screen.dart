@@ -527,10 +527,10 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
 
   Widget _buildHeader() {
     return SliverAppBar(
-      expandedHeight: 140, // ✅ Increased from 120 to fit all content
-      floating: false, // Don't float, stay visible on load
-      snap: false, // Smooth collapse, no snap
-      pinned: false, // Still collapses when scrolling up
+      expandedHeight: 140,
+      floating: false,
+      snap: false,
+      pinned: true, // ✅ FIX: Keep header visible, don't auto-collapse
       backgroundColor: Colors.black,
       elevation: 0,
       automaticallyImplyLeading: false,
