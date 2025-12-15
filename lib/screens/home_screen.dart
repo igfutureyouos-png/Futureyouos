@@ -948,7 +948,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                     ),
                   ),
                 ),
-              ),
               const SizedBox(width: AppSpacing.sm),
               // Settings icon
               GestureDetector(
