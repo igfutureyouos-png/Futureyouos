@@ -189,7 +189,7 @@ class _SystemCardState extends State<SystemCard> {
                         if (widget.onToggleHabit != null) ...[
                           const SizedBox(width: 8),
                           Padding(
-                            padding: const EdgeInsets.only(top: 6), // ✅ Push down 6px for better spacing
+                            padding: const EdgeInsets.only(top: 8), // ✅ Push down 8px (2mm more spacing)
                             child: GestureDetector(
                               onTap: _toggleCollapsed,
                               child: Container(

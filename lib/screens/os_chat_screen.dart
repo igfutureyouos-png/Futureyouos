@@ -80,7 +80,7 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
       debugPrint('✅ Timeline loaded: ${_timeline.length} messages');
       
       setState(() => _initialized = true);
-      _scrollToBottom();
+      // Don't auto-scroll on init - let header stay visible
       debugPrint('✅ OS Chat initialized successfully');
     } catch (e) {
       debugPrint('❌ Failed to initialize OS Chat: $e');
