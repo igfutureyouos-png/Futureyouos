@@ -10,6 +10,7 @@ import '../services/messages_service.dart';
 import '../services/premium_service.dart';
 import '../models/coach_message.dart' as model;
 import '../widgets/paywall_dialog.dart';
+import '../widgets/premium_paywall_screen.dart';
 
 /// Unified message type for timeline (OS messages + chat)
 class TimelineMessage {
@@ -194,9 +195,11 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
         // Check if it's a paywall error (should have been caught earlier, but just in case)
         if (response.error?.contains('Premium') == true || response.error?.contains('premium') == true) {
           if (mounted) {
-            showDialog(
-              context: context,
-              builder: (context) => const PaywallDialog(feature: 'AI Chat'),
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                fullscreenDialog: true,
+                builder: (context) => const PremiumPaywallScreen(feature: 'AI Chat'),
+              ),
             );
           }
         } else {
@@ -207,9 +210,11 @@ class _OSChatScreenState extends ConsumerState<OSChatScreen> {
       if (mounted) {
         // Check if it's a premium error in the exception message
         if (e.toString().toLowerCase().contains('premium')) {
-          showDialog(
-            context: context,
-            builder: (context) => const PaywallDialog(feature: 'AI Chat'),
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              fullscreenDialog: true,
+              builder: (context) => const PremiumPaywallScreen(feature: 'AI Chat'),
+            ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(

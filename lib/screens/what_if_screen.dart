@@ -11,6 +11,7 @@ import '../models/vault_item.dart';
 import '../providers/habit_provider.dart';
 import '../widgets/simple_header.dart';
 import '../widgets/paywall_dialog.dart';
+import '../widgets/premium_paywall_screen.dart';
 
 class GoalData {
   final int id;
@@ -331,9 +332,11 @@ class _WhatIfScreenState extends ConsumerState<WhatIfScreen> {
     final isPremium = await PremiumService.isPremium();
     if (!isPremium) {
       if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => const PaywallDialog(feature: 'What If Engine'),
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            fullscreenDialog: true,
+            builder: (context) => const PremiumPaywallScreen(feature: 'What If Engine'),
+          ),
         );
       }
       return;
@@ -424,9 +427,11 @@ class _WhatIfScreenState extends ConsumerState<WhatIfScreen> {
         
         // Check if it's a paywall error
         if (result.error?.contains('Premium') == true || result.error?.contains('premium') == true) {
-          showDialog(
-            context: context,
-            builder: (context) => const PaywallDialog(feature: 'What If Engine'),
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              fullscreenDialog: true,
+              builder: (context) => const PremiumPaywallScreen(feature: 'What If Engine'),
+            ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -443,9 +448,11 @@ class _WhatIfScreenState extends ConsumerState<WhatIfScreen> {
       
       // Check if it's a premium error in the exception message
       if (mounted && e.toString().toLowerCase().contains('premium')) {
-        showDialog(
-          context: context,
-          builder: (context) => const PaywallDialog(feature: 'What If Engine'),
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            fullscreenDialog: true,
+            builder: (context) => const PremiumPaywallScreen(feature: 'What If Engine'),
+          ),
         );
       }
     }
@@ -1255,9 +1262,11 @@ class _WhatIfScreenState extends ConsumerState<WhatIfScreen> {
             final isPremium = await PremiumService.isPremium();
             if (!isPremium) {
               if (mounted) {
-                showDialog(
-                  context: context,
-                  builder: (context) => const PaywallDialog(feature: 'What If Simulator'),
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    fullscreenDialog: true,
+                    builder: (context) => const PremiumPaywallScreen(feature: 'What If Simulator'),
+                  ),
                 );
               }
               return;
@@ -2464,9 +2473,11 @@ class _WhatIfChatScreenState extends State<_WhatIfChatScreen> {
     final isPremium = await PremiumService.isPremium();
     if (!isPremium) {
       if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => const PaywallDialog(feature: 'What If Simulator'),
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            fullscreenDialog: true,
+            builder: (context) => const PremiumPaywallScreen(feature: 'What If Simulator'),
+          ),
         );
       }
       return;

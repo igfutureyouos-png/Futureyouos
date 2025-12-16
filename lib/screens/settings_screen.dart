@@ -6,6 +6,7 @@ import '../design/tokens.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/glass_button.dart';
 import '../widgets/paywall_dialog.dart';
+import '../widgets/premium_paywall_screen.dart';
 import '../services/payment_service.dart';
 import '../services/premium_service.dart';
 import '../services/local_storage.dart';
@@ -1017,9 +1018,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   /// Show upgrade dialog with payment options
   void _showUpgradeDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => const PaywallDialog(feature: 'Premium Features'),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (context) => const PremiumPaywallScreen(feature: 'Premium Features'),
+      ),
     );
   }
 
