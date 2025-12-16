@@ -456,12 +456,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
             // Habit cards (System cards + Standalone habits)
             if (dayHabits.isEmpty)
               Padding(
-                padding: const EdgeInsets.only(top: 60),
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                    child: Container(
+                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 60, AppSpacing.lg, 0),
+                child: Container(
                       padding: const EdgeInsets.all(AppSpacing.lg),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -547,7 +543,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                     ),
                   ),
                 ),
-              ),
             
             if (dayHabits.isNotEmpty)
               Padding(
