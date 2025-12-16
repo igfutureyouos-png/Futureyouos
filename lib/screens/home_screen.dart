@@ -458,91 +458,90 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
               Padding(
                 padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 60, AppSpacing.lg, 0),
                 child: Container(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            AppColors.emerald.withOpacity(0.1),
-                            AppColors.emerald.withOpacity(0.05),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(AppBorderRadius.xl),
-                        border: Border.all(
-                          color: AppColors.emerald.withOpacity(0.2),
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            decoration: BoxDecoration(
-                              color: AppColors.emerald.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              LucideIcons.target,
-                              size: 36,
-                              color: AppColors.emerald,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          Text(
-                            'System Not Initialised',
-                            style: AppTextStyles.h3.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                          Text(
-                            'Create your first habit to\nactivate Future-You OS',
-                            style: AppTextStyles.body.copyWith(
-                              color: AppColors.textSecondary,
-                              fontSize: 14,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          GestureDetector(
-                            onTap: _navigateToPlanner,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.lg,
-                                vertical: AppSpacing.md,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: AppColors.emeraldGradient,
-                                borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    LucideIcons.arrowRight,
-                                    color: Colors.black,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: AppSpacing.sm),
-                                  Text(
-                                    'Go to Planner',
-                                    style: AppTextStyles.bodyMedium.copyWith(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.emerald.withOpacity(0.1),
+                        AppColors.emerald.withOpacity(0.05),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(AppBorderRadius.xl),
+                    border: Border.all(
+                      color: AppColors.emerald.withOpacity(0.2),
+                      width: 1,
                     ),
                   ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: AppColors.emerald.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          LucideIcons.target,
+                          size: 36,
+                          color: AppColors.emerald,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Text(
+                        'System Not Initialised',
+                        style: AppTextStyles.h3.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        'Create your first habit to\nactivate Future-You OS',
+                        style: AppTextStyles.body.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      GestureDetector(
+                        onTap: _navigateToPlanner,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg,
+                            vertical: AppSpacing.md,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: AppColors.emeraldGradient,
+                            borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                LucideIcons.arrowRight,
+                                color: Colors.black,
+                                size: 20,
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Text(
+                                'Go to Planner',
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+              ),
             
             if (dayHabits.isNotEmpty)
               Padding(
@@ -975,3 +974,5 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     );
   }
 }
+
+
