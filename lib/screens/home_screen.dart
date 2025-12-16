@@ -326,7 +326,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     // Show loading state while initializing (prevents grey screen)
     if (!_isInitialized) {
       return Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.black, // ✅ Pure black like OS chat screen
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -403,7 +403,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     final formattedDate = dateFormatter.format(_selectedDate);
     
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.black, // ✅ Pure black like OS chat screen
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -456,62 +456,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
             // Habit cards (System cards + Standalone habits)
             if (dayHabits.isEmpty)
               Padding(
-                padding: const EdgeInsets.only(top: 60), // ✅ Match planner layout
+                padding: const EdgeInsets.only(top: 60),
                 child: Align(
                   alignment: Alignment.topCenter,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                    child: Column(
-                      children: [
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.lg), // ✅ Reduced from xl (40% shorter)
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                           colors: [
                             AppColors.emerald.withOpacity(0.1),
                             AppColors.emerald.withOpacity(0.05),
                           ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(AppBorderRadius.xl),
                         border: Border.all(
                           color: AppColors.emerald.withOpacity(0.2),
+                          width: 1,
                         ),
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(AppSpacing.md), // ✅ Reduced
+                            padding: const EdgeInsets.all(AppSpacing.md),
                             decoration: BoxDecoration(
                               color: AppColors.emerald.withOpacity(0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
                               LucideIcons.target,
-                              size: 36, // ✅ Reduced from 48
+                              size: 36,
                               color: AppColors.emerald,
                             ),
                           ),
-                          const SizedBox(height: AppSpacing.md), // ✅ Reduced
+                          const SizedBox(height: AppSpacing.md),
                           Text(
-                            'System Not Initialised', // ✅ NEW TEXT
-                            style: AppTextStyles.h3.copyWith( // ✅ Smaller heading
+                            'System Not Initialised',
+                            style: AppTextStyles.h3.copyWith(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                           const SizedBox(height: AppSpacing.sm),
                           Text(
-                            'Create your first habit to\nactivate Future-You OS', // ✅ NEW TEXT
+                            'Create your first habit to\nactivate Future-You OS',
                             style: AppTextStyles.body.copyWith(
                               color: AppColors.textSecondary,
-                              fontSize: 14, // ✅ Slightly smaller
+                              fontSize: 14,
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: AppSpacing.md), // ✅ Reduced
+                          const SizedBox(height: AppSpacing.md),
                           GestureDetector(
                             onTap: _navigateToPlanner,
                             child: Container(
@@ -545,9 +544,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                           ),
                         ],
                       ),
-                    ),
-                        const SizedBox(height: AppSpacing.xxl),
-                      ],
                     ),
                   ),
                 ),
@@ -738,6 +734,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                       ],
                     ),
                   ),
+                  // Streak flame indicator (1cm / 38px to the left of tick circle)
+                  if (habit.streak > 0) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(AppBorderRadius.sm),
+                        border: Border.all(
+                          color: AppColors.warning.withOpacity(0.3),
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            LucideIcons.flame,
+                            size: 14,
+                            color: AppColors.warning,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${habit.streak}',
+                            style: AppTextStyles.label.copyWith(
+                              color: AppColors.warning,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   // Checkmark icon
                   Icon(
                     isDone ? LucideIcons.checkCircle2 : LucideIcons.circle,

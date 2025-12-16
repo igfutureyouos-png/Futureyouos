@@ -330,7 +330,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
     // Show loading state while initializing (prevents grey screen)
     if (!_isInitialized) {
       return Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.black, // ✅ Pure black like OS chat screen
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -352,7 +352,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
     }
     
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.black, // ✅ Pure black like OS chat screen
       body: Stack(
         children: [
           NestedScrollView(
