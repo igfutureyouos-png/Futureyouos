@@ -24,8 +24,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   
-  bool _notifDaily = true;
-  bool _notifChat = false;
   String _selectedVoice = 'marcus';
   
   // Available voices
@@ -50,14 +48,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
   
   void _loadSettings() {
-    _notifDaily = LocalStorageService.getSetting<bool>('notifDaily', defaultValue: true) ?? true;
-    _notifChat = LocalStorageService.getSetting<bool>('notifChat', defaultValue: false) ?? false;
     _selectedVoice = LocalStorageService.getSelectedVoice();
   }
   
   Future<void> _saveSettings() async {
-    await LocalStorageService.saveSetting('notifDaily', _notifDaily);
-    await LocalStorageService.saveSetting('notifChat', _notifChat);
     await LocalStorageService.setSelectedVoice(_selectedVoice);
     
     _showSuccessSnackBar('Settings saved successfully');
@@ -383,40 +377,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             
             const SizedBox(height: AppSpacing.xl),
-          
-          // Notifications section
-          GlassCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Notifications',
-                  style: AppTextStyles.h3.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                
-                _buildToggleSetting(
-                  'Daily Brief',
-                  'Morning summary of today\'s commitments',
-                  _notifDaily,
-                  (value) => setState(() => _notifDaily = value),
-                ),
-                
-                const SizedBox(height: AppSpacing.lg),
-                
-                _buildToggleSetting(
-                  'Chat Mentions',
-                  'Ping when Future You nudges you',
-                  _notifChat,
-                  (value) => setState(() => _notifChat = value),
-                ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: AppSpacing.lg),
           
           // Voice Settings section
           GlassCard(
