@@ -844,49 +844,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showSubscriptionOptions() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.baseDark2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppBorderRadius.xl),
-        ),
-        title: Text(
-          'Choose Your Plan',
-          style: AppTextStyles.h3.copyWith(
-            color: AppColors.textPrimary,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildSubscriptionOption(
-              'Monthly',
-              '\$9.99/month',
-              'Full access to all premium features',
-              () => _handleSubscription('monthly'),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _buildSubscriptionOption(
-              'Yearly',
-              '\$99.99/year',
-              'Save 17% with annual billing',
-              () => _handleSubscription('yearly'),
-              isPopular: true,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-        ],
+    // Use the WORKING premium paywall screen (same as bottom button)
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (context) => const PremiumPaywallScreen(feature: 'Premium Features'),
       ),
     );
   }
