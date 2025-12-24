@@ -1090,22 +1090,28 @@ class AiChatResult {
 // Coach related models - Future-You OS Brain Layer
 class HabitCompletion {
   final String habitId;
+  final String? habitTitle;
   final DateTime date;
   final bool done;
+  final int? streak;
   final DateTime? completedAt;
   
   HabitCompletion({
     required this.habitId,
+    this.habitTitle,
     required this.date,
     required this.done,
+    this.streak,
     this.completedAt,
   });
   
   factory HabitCompletion.fromJson(Map<String, dynamic> json) {
     return HabitCompletion(
       habitId: json['habitId'],
+      habitTitle: json['habitTitle'],
       date: DateTime.parse(json['date']),
       done: json['done'],
+      streak: json['streak'],
       completedAt: json['completedAt'] != null ? DateTime.parse(json['completedAt']) : null,
     );
   }
@@ -1113,8 +1119,10 @@ class HabitCompletion {
   Map<String, dynamic> toJson() {
     return {
       'habitId': habitId,
+      'habitTitle': habitTitle,
       'date': date.toIso8601String(),
       'done': done,
+      'streak': streak,
       'completedAt': completedAt?.toIso8601String(),
     };
   }
