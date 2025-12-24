@@ -280,19 +280,32 @@ class ApiClient {
   // Coach API endpoints - Future-You OS Brain Layer
   static Future<ApiResponse<void>> syncCoachData(List<Habit> habits, List<HabitCompletion> completions) async {
     try {
+      print('═══════════════════════════════════════════════════════════');
+      print('🚀 FLUTTER: Calling /api/v1/coach/sync');
+      print('📊 Sending: ${habits.length} habits, ${completions.length} completions');
+      
       final data = {
         'habits': habits.map((h) => h.toJson()).toList(),
         'completions': completions.map((c) => c.toJson()).toList(),
       };
       
+      print('📋 Completions data: ${data['completions']}');
+      print('🌐 Base URL: $_baseUrl');
+      print('═══════════════════════════════════════════════════════════');
+      
       final response = await _post('/api/v1/coach/sync', data);
+      
+      print('✅ Response status: ${response.statusCode}');
+      print('✅ Response body: ${response.body}');
       
       if (response.statusCode == 200) {
         return ApiResponse.success(null);
       } else {
+        print('❌ Sync failed: ${response.statusCode} - ${response.body}');
         return ApiResponse.error('Failed to sync coach data: ${response.statusCode}');
       }
     } catch (e) {
+      print('❌ Network error in syncCoachData: $e');
       return ApiResponse.error('Network error: $e');
     }
   }

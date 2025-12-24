@@ -23,8 +23,14 @@ export default async function coachController(fastify: FastifyInstance) {
    * ✅ FIXED: Now calls coachService.sync() which auto-creates habits, updates streaks, writes to Completion table
    */
   fastify.post("/api/v1/coach/sync", async (req: any, reply) => {
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('🔥🔥🔥 SYNC ENDPOINT HIT 🔥🔥🔥');
+    console.log('═══════════════════════════════════════════════════════════');
+    
     try {
       const userId = getUserIdOr401(req);
+      console.log(`👤 User ID: ${userId}`);
+      
       const { habits = [], completions = [] } = req.body as {
         habits?: any[];
         completions?: { 
@@ -36,16 +42,20 @@ export default async function coachController(fastify: FastifyInstance) {
         }[];
       };
 
-      console.log(`🔁 [SYNC] User ${userId.substring(0, 8)}... syncing ${completions.length} completions`);
+      console.log(`📊 Received: ${habits.length} habits, ${completions.length} completions`);
+      console.log(`📋 Completions data:`, JSON.stringify(completions, null, 2));
 
       // Use the service which handles auto-creation, streak updates, and Completion table writes
       const result = await coachService.sync(userId, habits, completions);
 
       console.log(`✅ [SYNC] Complete: ${result.logged} logged, ${result.streaks?.length || 0} habits synced`);
+      console.log('═══════════════════════════════════════════════════════════');
       
       return result;
     } catch (err: any) {
       console.error(`❌ [SYNC] Error:`, err);
+      console.error(`❌ Stack:`, err.stack);
+      console.log('═══════════════════════════════════════════════════════════');
       const code = err.statusCode || 500;
       return reply.code(code).send({ error: err.message });
     }
