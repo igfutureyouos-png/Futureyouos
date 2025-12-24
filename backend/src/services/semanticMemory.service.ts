@@ -126,13 +126,30 @@ export class SemanticMemoryService {
         return;
       }
 
-      // Prepare metadata
-      const metadata = {
+      // Prepare metadata - ChromaDB only accepts flat string/number/boolean values
+      const rawMetadata = {
         type: params.type,
         importance: params.importance || 3,
         timestamp: new Date().toISOString(),
         ...(params.metadata || {}),
       };
+
+      // Sanitize metadata to ensure ChromaDB compatibility
+      const metadata: Record<string, string | number | boolean> = {};
+      for (const [key, value] of Object.entries(rawMetadata)) {
+        if (value === null || value === undefined) {
+          continue; // Skip null/undefined
+        }
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+          metadata[key] = value;
+        } else if (typeof value === 'object') {
+          // Serialize objects/arrays as JSON strings
+          metadata[key] = JSON.stringify(value);
+        } else {
+          // Convert other types to string
+          metadata[key] = String(value);
+        }
+      }
 
       // Generate a unique ID
       const id = `${params.type}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
