@@ -14,11 +14,46 @@ export class CoachService {
   async sync(
     userId: string,
     habits: any[],
-    completions: { habitId: string; date: string; done: boolean }[]
+    completions: { 
+      habitId: string; 
+      habitTitle?: string; 
+      date: string; 
+      done: boolean;
+      streak?: number;
+    }[]
   ) {
     if (!userId) throw new Error("Missing userId");
 
     if (Array.isArray(completions) && completions.length > 0) {
+      // =========================================================================
+      // STEP 0: AUTO-CREATE MISSING HABITS
+      // =========================================================================
+      for (const c of completions) {
+        const existing = await prisma.habit.findUnique({ 
+          where: { id: c.habitId } 
+        });
+        
+        if (!existing) {
+          await prisma.habit.create({
+            data: {
+              id: c.habitId,
+              userId,
+              title: c.habitTitle || `Habit ${c.habitId.slice(-6)}`,
+              streak: c.streak ?? 0,
+              schedule: {},
+              context: {},
+            },
+          });
+          console.log(`🔧 Auto-created habit: "${c.habitTitle}" (${c.habitId})`);
+        } else if (c.habitTitle && existing.title !== c.habitTitle && existing.title.startsWith('Habit ')) {
+          await prisma.habit.update({
+            where: { id: c.habitId },
+            data: { title: c.habitTitle },
+          });
+          console.log(`🔧 Updated habit title: "${c.habitTitle}"`);
+        }
+      }
+
       // Query all habits to get titles and current streaks
       const userHabits = await prisma.habit.findMany({
         where: { userId },
@@ -43,7 +78,7 @@ export class CoachService {
             type: "habit_action",
             payload: {
               habitId: c.habitId,
-              habitTitle: habit?.title || "Unknown Habit",
+              habitTitle: habit?.title || c.habitTitle || "Unknown Habit",
               completed: c.done,
               streak: newStreak,
               previousStreak: currentStreak,
@@ -54,6 +89,41 @@ export class CoachService {
         });
       });
       await Promise.allSettled(writes);
+      
+      // =========================================================================
+      // STEP 3: Write to Completion table
+      // =========================================================================
+      const completionWrites = completions.map((c) => {
+        const dateObj = new Date(c.date);
+        dateObj.setHours(0, 0, 0, 0);
+
+        return prisma.completion
+          .upsert({
+            where: {
+              userId_habitId_date: {
+                userId,
+                habitId: c.habitId,
+                date: dateObj,
+              },
+            },
+            create: {
+              userId,
+              habitId: c.habitId,
+              date: dateObj,
+              done: c.done,
+              completedAt: c.done ? new Date() : null,
+            },
+            update: {
+              done: c.done,
+              completedAt: c.done ? new Date() : null,
+            },
+          })
+          .catch((err) => {
+            console.error(`Failed to upsert completion:`, err.message);
+            return null;
+          });
+      });
+      await Promise.allSettled(completionWrites);
       
       // ✅ CRITICAL: Update habit streaks in database
       const streakUpdates = completions.map((c) => {
@@ -84,18 +154,20 @@ export class CoachService {
         }
       });
       await Promise.allSettled(streakUpdates);
+      
+      console.log(`✅ SYNC COMPLETE: ${completions.length} completions for user ${userId}`);
     }
 
-    // ✅ Return updated streaks for iOS sync
+    // Return updated habits for Flutter
     const updatedHabits = await prisma.habit.findMany({
       where: { userId },
-      select: { id: true, streak: true, lastTick: true },
+      select: { id: true, title: true, streak: true, lastTick: true },
     });
 
     return { 
       ok: true, 
       logged: completions?.length ?? 0,
-      streaks: updatedHabits, // ← iOS can use this to update local habits
+      streaks: updatedHabits,
     };
   }
 
