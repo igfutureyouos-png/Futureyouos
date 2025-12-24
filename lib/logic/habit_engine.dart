@@ -229,15 +229,32 @@ class HabitEngine extends ChangeNotifier {
 
   void _syncCompletionToBackend(String habitId, bool done, DateTime date) {
     try {
+      // Find the habit to get its title and streak
+      final habit = _habits.firstWhere(
+        (h) => h.id == habitId,
+        orElse: () => Habit(
+          id: habitId,
+          title: 'Unknown',
+          type: 'habit',
+          time: '',
+          startDate: DateTime.now(),
+          endDate: DateTime.now(),
+          repeatDays: [],
+          createdAt: DateTime.now(),
+        ),
+      );
+      
       final completion = HabitCompletion(
         habitId: habitId,
+        habitTitle: habit.title,
         date: date,
         done: done,
+        streak: habit.streak,
         completedAt: done ? DateTime.now() : null,
       );
 
       syncService.queueCompletion(completion);
-      debugPrint('📤 Queued completion for sync: $habitId (${done ? "done" : "undone"})');
+      debugPrint('📤 Queued completion for sync: $habitId "${habit.title}" streak:${habit.streak} (${done ? "done" : "undone"})');
     } catch (e) {
       debugPrint('❌ Failed to queue completion: $e');
     }

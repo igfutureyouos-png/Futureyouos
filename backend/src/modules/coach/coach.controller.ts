@@ -3,6 +3,9 @@ import { FastifyInstance } from "fastify";
 import { prisma } from "../../utils/db";
 import { aiService } from "../../services/ai.service";
 import { notificationsService } from "../../services/notifications.service";
+import { CoachService } from "./coach.service";
+
+const coachService = new CoachService();
 
 function getUserIdOr401(req: any): string {
   const uid = req?.user?.id || req.headers["x-user-id"];
@@ -17,33 +20,32 @@ function getUserIdOr401(req: any): string {
 export default async function coachController(fastify: FastifyInstance) {
   /**
    * 🔁 Observer sync: log completions to events
+   * ✅ FIXED: Now calls coachService.sync() which auto-creates habits, updates streaks, writes to Completion table
    */
   fastify.post("/api/v1/coach/sync", async (req: any, reply) => {
     try {
       const userId = getUserIdOr401(req);
-      const { completions } = req.body as {
-        completions: { habitId: string; date: string; done: boolean }[];
+      const { habits = [], completions = [] } = req.body as {
+        habits?: any[];
+        completions?: { 
+          habitId: string; 
+          habitTitle?: string; 
+          date: string; 
+          done: boolean; 
+          streak?: number;
+        }[];
       };
 
-      if (Array.isArray(completions) && completions.length > 0) {
-        const writes = completions.map((c) =>
-          prisma.event.create({
-            data: {
-              userId,
-              type: "habit_action",
-              payload: {
-                habitId: c.habitId,
-                date: c.date,
-                completed: c.done,
-              },
-            },
-          })
-        );
-        await Promise.allSettled(writes);
-      }
+      console.log(`🔁 [SYNC] User ${userId.substring(0, 8)}... syncing ${completions.length} completions`);
 
-      return { ok: true, logged: completions?.length ?? 0 };
+      // Use the service which handles auto-creation, streak updates, and Completion table writes
+      const result = await coachService.sync(userId, habits, completions);
+
+      console.log(`✅ [SYNC] Complete: ${result.logged} logged, ${result.updatedHabits?.length || 0} habits synced`);
+      
+      return result;
     } catch (err: any) {
+      console.error(`❌ [SYNC] Error:`, err);
       const code = err.statusCode || 500;
       return reply.code(code).send({ error: err.message });
     }
