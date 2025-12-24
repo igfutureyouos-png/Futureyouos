@@ -64,11 +64,12 @@ export class VoiceService {
       return { url: existing.url, cached: true };
     }
 
-    // Call ElevenLabs (disabled - API key invalid)
+    // ⚠️ ElevenLabs TTS DISABLED - API key invalid
     console.log("⚠️ ElevenLabs TTS disabled - returning null");
     return { url: null, cached: false };
-    
+
     /* DISABLED - Uncomment when API key is fixed
+    // Call ElevenLabs
     const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
     const resp = await axios.post(
       url,
@@ -87,7 +88,6 @@ export class VoiceService {
         },
       }
     );
-    */
 
     // Upload to S3-compatible storage (recommended)
     let publicUrl: string;
@@ -122,6 +122,7 @@ export class VoiceService {
     });
 
     return { url: publicUrl, cached: false };
+    */
   }
 
   /**
