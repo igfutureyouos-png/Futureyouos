@@ -441,7 +441,7 @@ Not to pressure you — to honour the standard you're building.`;
   ): Promise<CoachOutput> {
     const userName = synthesis.userName || "Friend";
     const day = epistemic.daysInSystem || 1;
-    const habitCount = synthesis.todaysHabits?.length || 0;
+    const habitCount = synthesis.recentData.today.completions.length || 0;
     
     // Get completion facts
     const completionFacts = epistemic.verifiedFacts
@@ -509,7 +509,7 @@ ${epistemic.verifiedFacts.length > 0 ? `\nVerified: ${epistemic.verifiedFacts.ma
       
       if (violations.length > 0) {
         console.warn(`⚠️ Observer brief had violations, using template fallback`);
-        await this.logGeneration(userId, "brief", { phase: "observer", day }, template);
+        await this.logGeneration(userId, "brief", synthesis, template);
         return {
           text: template,
           metadata: {
@@ -523,7 +523,7 @@ ${epistemic.verifiedFacts.length > 0 ? `\nVerified: ${epistemic.verifiedFacts.ma
         };
       }
       
-      await this.logGeneration(userId, "brief", { phase: "observer", day }, cleaned);
+      await this.logGeneration(userId, "brief", synthesis, cleaned);
       
       return {
         text: cleaned,
