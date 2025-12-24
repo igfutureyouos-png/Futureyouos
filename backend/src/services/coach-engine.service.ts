@@ -45,6 +45,15 @@ import {
   validateOutput,
   ValidationResult,
 } from "./voice-validator";
+import { 
+  epistemicGuardrails, 
+  EpistemicContext 
+} from "./epistemic-guardrails.service";
+import {
+  getObserverBriefExample,
+  getObserverDebriefExample,
+  getObserverNudge,
+} from "./observer-voice-examples";
 
 // =============================================================================
 // CONFIGURATION
@@ -314,6 +323,16 @@ class CoachEngineService {
     }
     return `${synthesis.userName || "Friend"}, what's the one thing you're avoiding right now?`;
   }
+
+  /**
+   * Get time of day for observer phase nudges
+   */
+  private getTimeOfDay(): "morning" | "midday" | "evening" | "gentle_reconnect" {
+    const hour = new Date().getHours();
+    if (hour < 12) return "morning";
+    if (hour < 17) return "midday";
+    return "evening";
+  }
   
   private getFallbackLetter(synthesis: any, state: string, authority: string): string {
     const examples = getExamples(state as any, "letter", authority as any);
@@ -342,40 +361,63 @@ Not to pressure you — to honour the standard you're building.`;
    */
   async generateBrief(userId: string, options?: GenerationOptions): Promise<CoachOutput> {
     console.log(`🧠 [COACH ENGINE] Generating brief for user ${userId.substring(0, 8)}...`);
+    
+    // ✅ Build epistemic context FIRST
+    const epistemicContext = await epistemicGuardrails.buildContext(userId);
+    console.log(`   Epistemic Phase: ${epistemicContext.phase}, Days: ${epistemicContext.daysInSystem}, Can claim patterns: ${epistemicContext.canClaimPatterns}`);
+    
     const synthesis = await memorySynthesis.synthesizeForBrief(userId);
     const state = this.computeState(synthesis);
     const authority = this.computeAuthority(synthesis);
-    console.log(`   Phase: ${synthesis.phase}, Authority: ${authority}, State: ${state}`);
-    console.log(`   Data Quality: ${synthesis.voiceCalibration.dataQuality}, Intensity: ${synthesis.voiceCalibration.currentIntensity}`);
+    
+    // ✅ Override authority to 'humble' if in observer phase
+    const effectiveAuthority = epistemicContext.phase === "observer" ? "humble" : authority;
+    
+    console.log(`   Phase: ${synthesis.phase}, Authority: ${effectiveAuthority}, State: ${state}`);
+    console.log(`   Data Quality: ${epistemicContext.dataQuality}, Intensity: ${synthesis.voiceCalibration?.currentIntensity || 5}`);
+
+    // ✅ For observer phase (days 1-7), use observer-specific examples
+    if (epistemicContext.phase === "observer") {
+      return this.generateObserverBrief(userId, epistemicContext, synthesis);
+    }
   
     for (let attempt = 1; attempt <= 2; attempt++) {
-      const systemPrompt = this.buildSystemPromptV2("brief", state, authority, synthesis);
+      // ✅ Inject epistemic rules into system prompt
+      const baseSystemPrompt = this.buildSystemPromptV2("brief", state, effectiveAuthority, synthesis);
+      const systemPrompt = epistemicGuardrails.injectIntoPrompt(baseSystemPrompt, epistemicContext);
       const userPrompt = this.buildBriefPrompt(synthesis);
       
       const text = await this.callLLM(systemPrompt, userPrompt, {
         maxTokens: options?.maxTokens || 800,
         temperature: options?.temperature || 0.8,
       });
+
+      // ✅ Validate with epistemic guardrails
+      const { cleaned, violations, wasModified } = epistemicGuardrails.validateAndClean(text, epistemicContext);
+      
+      if (wasModified) {
+        console.warn(`⚠️ Brief was modified to fix epistemic violations:`, violations);
+      }
   
-      const validation = validateOutput(text, {
+      const validation = validateOutput(cleaned, {
         messageType: "brief",
         userName: synthesis.userName,
         strictMode: true,
       });
   
       if (validation.passed) {
-        await this.logGeneration(userId, "brief", synthesis, text);
-        const questionsAsked = this.extractQuestionsFromResponse(text);
-        console.log(`✅ [COACH ENGINE] Brief generated successfully (${text.length} chars)`);
+        await this.logGeneration(userId, "brief", synthesis, cleaned);
+        const questionsAsked = this.extractQuestionsFromResponse(cleaned);
+        console.log(`✅ [COACH ENGINE] Brief generated successfully (${cleaned.length} chars)`);
         
         return {
-          text: voiceValidator.clean(text, synthesis.userName),
+          text: voiceValidator.clean(cleaned, synthesis.userName),
           metadata: {
             executionState: state,
             riskLevel: synthesis.currentRisk?.level || "low",
-            authority,
-            dataQuality: synthesis.voiceCalibration?.dataQuality || "sparse",
-            phase: synthesis.phase || "observer",
+            authority: effectiveAuthority,
+            dataQuality: epistemicContext.dataQuality,
+            phase: epistemicContext.phase,
             intensity: synthesis.voiceCalibration?.currentIntensity || 5,
             questionsAsked,
           },
@@ -385,21 +427,130 @@ Not to pressure you — to honour the standard you're building.`;
       console.warn(`Brief validation failed (attempt ${attempt}):`, validation.violations);
     }
   
-    // Fallback to gold standard example
-    const fallbackText = this.getFallbackBrief(synthesis, state, authority);
-    await this.logGeneration(userId, "brief", synthesis, fallbackText);
+    // Fallback to observer brief if all else fails
+    return this.generateObserverBrief(userId, epistemicContext, synthesis);
+  }
+
+  /**
+   * Generate observer-phase brief (days 1-7) - humble, curious, learning
+   */
+  private async generateObserverBrief(
+    userId: string,
+    epistemic: EpistemicContext,
+    synthesis: BriefSynthesis
+  ): Promise<CoachOutput> {
+    const userName = synthesis.userName || "Friend";
+    const day = epistemic.daysInSystem || 1;
+    const habitCount = synthesis.todaysHabits?.length || 0;
     
-    return {
-      text: fallbackText,
-      metadata: { 
-        executionState: state, 
-        authority, 
-        riskLevel: "low",
-        dataQuality: "sparse",
-        phase: synthesis.phase || "observer",
-        intensity: 5,
-      },
-    };
+    // Get completion facts
+    const completionFacts = epistemic.verifiedFacts
+      .filter(f => f.type === "completion")
+      .map(f => f.content)
+      .join(", ");
+    
+    // Get observer-specific example
+    const template = getObserverBriefExample(day, userName, habitCount, completionFacts || undefined);
+    
+    // Try to enhance with LLM but with STRICT observer rules
+    const systemPrompt = `${VOICE_CONSTITUTION}
+
+## CRITICAL: OBSERVER PHASE (Day ${day} of 7)
+
+YOU ARE IN LEARNING MODE. YOU KNOW ALMOST NOTHING ABOUT THIS USER.
+
+${epistemic.epistemicRules}
+
+VERIFIED FACTS (the ONLY things you can reference):
+${epistemic.verifiedFacts.map(f => `- ${f.content}`).join("\n") || "- None yet. You are learning."}
+
+EXAMPLE OBSERVER BRIEF:
+${template}
+
+Generate a similar brief. Be curious, warm, and honest about not knowing patterns yet.
+Ask 2-3 discovery questions to learn about them.
+DO NOT claim patterns. DO NOT claim history. DO NOT claim timing.`;
+
+    const userPrompt = `Generate a morning brief for ${userName} on day ${day}.
+Today's habits scheduled: ${habitCount}
+${epistemic.verifiedFacts.length > 0 ? `\nVerified: ${epistemic.verifiedFacts.map(f => f.content).join(", ")}` : ""}`;
+
+    try {
+      const openai = getOpenAIClient();
+      if (!openai) {
+        // Fallback to template if no OpenAI
+        return {
+          text: template,
+          metadata: {
+            executionState: "middle",
+            riskLevel: "low",
+            authority: "humble",
+            dataQuality: epistemic.dataQuality,
+            phase: "observer",
+            intensity: 3,
+          },
+        };
+      }
+
+      const response = await openai.chat.completions.create({
+        model: OPENAI_MODEL,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        max_tokens: 600,
+        temperature: 0.8,
+      });
+
+      const text = response.choices[0]?.message?.content || template;
+      
+      // Validate and clean
+      const { cleaned, violations } = epistemicGuardrails.validateAndClean(text, epistemic);
+      
+      if (violations.length > 0) {
+        console.warn(`⚠️ Observer brief had violations, using template fallback`);
+        await this.logGeneration(userId, "brief", { phase: "observer", day }, template);
+        return {
+          text: template,
+          metadata: {
+            executionState: "middle",
+            riskLevel: "low",
+            authority: "humble",
+            dataQuality: epistemic.dataQuality,
+            phase: "observer",
+            intensity: 3,
+          },
+        };
+      }
+      
+      await this.logGeneration(userId, "brief", { phase: "observer", day }, cleaned);
+      
+      return {
+        text: cleaned,
+        metadata: {
+          executionState: "middle",
+          riskLevel: "low",
+          authority: "humble",
+          dataQuality: epistemic.dataQuality,
+          phase: "observer",
+          intensity: 3,
+        },
+      };
+    } catch (error) {
+      console.error("Error generating observer brief:", error);
+      // Use template as fallback
+      return {
+        text: template,
+        metadata: {
+          executionState: "middle",
+          riskLevel: "low",
+          authority: "humble",
+          dataQuality: epistemic.dataQuality,
+          phase: "observer",
+          intensity: 3,
+        },
+      };
+    }
   }
   
   /**
@@ -414,6 +565,10 @@ Not to pressure you — to honour the standard you're building.`;
   ): Promise<CoachOutput> {
     console.log(`🧠 [COACH ENGINE] Generating nudge for user ${userId.substring(0, 8)}...`);
     console.log(`   Trigger: ${triggerType}, Severity: ${severity}`);
+    
+    // ✅ Build epistemic context
+    const epistemicContext = await epistemicGuardrails.buildContext(userId);
+    
     const synthesis = await memorySynthesis.synthesizeForNudge(
       userId, 
       triggerType, 
@@ -422,10 +577,36 @@ Not to pressure you — to honour the standard you're building.`;
     );
     const state = this.computeState(synthesis);
     const authority = this.computeAuthority(synthesis);
-    console.log(`   Phase: ${synthesis.phase}, Authority: ${authority}, State: ${state}`);
+    
+    // ✅ Override authority for observer phase
+    const effectiveAuthority = epistemicContext.phase === "observer" ? "humble" : authority;
+    
+    console.log(`   Phase: ${epistemicContext.phase}, Authority: ${effectiveAuthority}, State: ${state}`);
+    
+    // ✅ For observer phase, use simple observer nudges
+    if (epistemicContext.phase === "observer") {
+      const userName = synthesis.userName || "Friend";
+      const timeOfDay = this.getTimeOfDay();
+      const nudge = getObserverNudge(timeOfDay, userName, epistemicContext.daysInSystem);
+      
+      return {
+        text: nudge,
+        metadata: {
+          executionState: "middle",
+          riskLevel: "low",
+          authority: "humble",
+          dataQuality: epistemicContext.dataQuality,
+          phase: "observer",
+          intensity: 3,
+          trigger: triggerType,
+        },
+      };
+    }
     
     for (let attempt = 1; attempt <= 2; attempt++) {
-      const systemPrompt = this.buildSystemPromptV2("nudge", state, authority, synthesis);
+      // ✅ Inject epistemic rules
+      const baseSystemPrompt = this.buildSystemPromptV2("nudge", state, effectiveAuthority, synthesis);
+      const systemPrompt = epistemicGuardrails.injectIntoPrompt(baseSystemPrompt, epistemicContext);
       const userPrompt = this.buildNudgePrompt(synthesis);
       
       const text = await this.callLLM(systemPrompt, userPrompt, {
@@ -433,24 +614,27 @@ Not to pressure you — to honour the standard you're building.`;
         temperature: options?.temperature || 0.7,
       });
       
-      const validation = validateOutput(text, {
+      // ✅ Validate with epistemic guardrails
+      const { cleaned, violations } = epistemicGuardrails.validateAndClean(text, epistemicContext);
+      
+      const validation = validateOutput(cleaned, {
         messageType: "nudge",
         userName: synthesis.userName,
         strictMode: false, // Nudges are shorter, less strict
       });
       
       if (validation.passed) {
-        await this.logGeneration(userId, "nudge", synthesis, text, { trigger: triggerType });
-        console.log(`✅ [COACH ENGINE] Nudge generated successfully (${text.length} chars)`);
+        await this.logGeneration(userId, "nudge", synthesis, cleaned, { trigger: triggerType });
+        console.log(`✅ [COACH ENGINE] Nudge generated successfully (${cleaned.length} chars)`);
         
         return {
-          text: voiceValidator.clean(text, synthesis.userName),
+          text: voiceValidator.clean(cleaned, synthesis.userName),
           metadata: {
             executionState: state,
             riskLevel: synthesis.currentRisk?.level || "low",
-            authority,
-            dataQuality: synthesis.voiceCalibration?.dataQuality || "sparse",
-            phase: synthesis.phase || "observer",
+            authority: effectiveAuthority,
+            dataQuality: epistemicContext.dataQuality,
+            phase: epistemicContext.phase,
             intensity: synthesis.voiceCalibration?.currentIntensity || 5,
             trigger: triggerType,
           },
@@ -483,14 +667,50 @@ Not to pressure you — to honour the standard you're building.`;
    */
   async generateDebrief(userId: string, options?: GenerationOptions): Promise<CoachOutput> {
     console.log(`🧠 [COACH ENGINE] Generating debrief for user ${userId.substring(0, 8)}...`);
+    
+    // ✅ Build epistemic context
+    const epistemicContext = await epistemicGuardrails.buildContext(userId);
+    
     const synthesis = await memorySynthesis.synthesizeForDebrief(userId);
     const state = this.computeState(synthesis);
     const authority = this.computeAuthority(synthesis);
-    console.log(`   Phase: ${synthesis.phase}, Authority: ${authority}, State: ${state}`);
-    console.log(`   Data Quality: ${synthesis.voiceCalibration.dataQuality}, Intensity: ${synthesis.voiceCalibration.currentIntensity}`);
+    
+    // ✅ Override authority for observer phase
+    const effectiveAuthority = epistemicContext.phase === "observer" ? "humble" : authority;
+    
+    console.log(`   Phase: ${epistemicContext.phase}, Authority: ${effectiveAuthority}, State: ${state}`);
+    console.log(`   Data Quality: ${epistemicContext.dataQuality}, Intensity: ${synthesis.voiceCalibration?.currentIntensity || 5}`);
+    
+    // ✅ For observer phase, use observer-specific debrief
+    if (epistemicContext.phase === "observer") {
+      const userName = synthesis.userName || "Friend";
+      const day = epistemicContext.daysInSystem || 1;
+      
+      // Build today's summary from verified facts
+      const todaySummary = epistemicContext.verifiedFacts
+        .filter(f => f.type === "completion")
+        .map(f => f.content)
+        .join(", ") || "You showed up.";
+      
+      const debrief = getObserverDebriefExample(day, userName, todaySummary);
+      
+      return {
+        text: debrief,
+        metadata: {
+          executionState: "middle",
+          riskLevel: "low",
+          authority: "humble",
+          dataQuality: epistemicContext.dataQuality,
+          phase: "observer",
+          intensity: 3,
+        },
+      };
+    }
     
     for (let attempt = 1; attempt <= 2; attempt++) {
-      const systemPrompt = this.buildSystemPromptV2("debrief", state, authority, synthesis);
+      // ✅ Inject epistemic rules
+      const baseSystemPrompt = this.buildSystemPromptV2("debrief", state, effectiveAuthority, synthesis);
+      const systemPrompt = epistemicGuardrails.injectIntoPrompt(baseSystemPrompt, epistemicContext);
       const userPrompt = this.buildDebriefPrompt(synthesis);
       
       const text = await this.callLLM(systemPrompt, userPrompt, {
@@ -498,25 +718,28 @@ Not to pressure you — to honour the standard you're building.`;
         temperature: options?.temperature || 0.8,
       });
       
-      const validation = validateOutput(text, {
+      // ✅ Validate with epistemic guardrails
+      const { cleaned, violations } = epistemicGuardrails.validateAndClean(text, epistemicContext);
+      
+      const validation = validateOutput(cleaned, {
         messageType: "debrief",
         userName: synthesis.userName,
         strictMode: true,
       });
       
       if (validation.passed) {
-        await this.logGeneration(userId, "debrief", synthesis, text);
-        const questionsAsked = this.extractQuestionsFromResponse(text);
-        console.log(`✅ [COACH ENGINE] Debrief generated successfully (${text.length} chars)`);
+        await this.logGeneration(userId, "debrief", synthesis, cleaned);
+        const questionsAsked = this.extractQuestionsFromResponse(cleaned);
+        console.log(`✅ [COACH ENGINE] Debrief generated successfully (${cleaned.length} chars)`);
         
         return {
-          text: voiceValidator.clean(text, synthesis.userName),
+          text: voiceValidator.clean(cleaned, synthesis.userName),
           metadata: {
             executionState: state,
             riskLevel: synthesis.currentRisk?.level || "low",
-            authority,
-            dataQuality: synthesis.voiceCalibration?.dataQuality || "sparse",
-            phase: synthesis.phase || "observer",
+            authority: effectiveAuthority,
+            dataQuality: epistemicContext.dataQuality,
+            phase: epistemicContext.phase,
             intensity: synthesis.voiceCalibration?.currentIntensity || 5,
             questionsAsked,
           },
@@ -526,8 +749,15 @@ Not to pressure you — to honour the standard you're building.`;
       console.warn(`Debrief validation failed (attempt ${attempt}):`, validation.violations);
     }
     
-    // Fallback to gold standard example
-    const fallbackText = this.getFallbackDebrief(synthesis, state, authority);
+    // Fallback to observer debrief if all else fails
+    const userName = synthesis.userName || "Friend";
+    const day = epistemicContext.daysInSystem || 1;
+    const todaySummary = epistemicContext.verifiedFacts
+      .filter(f => f.type === "completion")
+      .map(f => f.content)
+      .join(", ") || "You showed up.";
+    
+    const fallbackText = getObserverDebriefExample(day, userName, todaySummary);
     await this.logGeneration(userId, "debrief", synthesis, fallbackText);
     
     return {
