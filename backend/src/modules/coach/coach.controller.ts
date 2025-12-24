@@ -41,7 +41,7 @@ export default async function coachController(fastify: FastifyInstance) {
       // Use the service which handles auto-creation, streak updates, and Completion table writes
       const result = await coachService.sync(userId, habits, completions);
 
-      console.log(`✅ [SYNC] Complete: ${result.logged} logged, ${result.updatedHabits?.length || 0} habits synced`);
+      console.log(`✅ [SYNC] Complete: ${result.logged} logged, ${result.streaks?.length || 0} habits synced`);
       
       return result;
     } catch (err: any) {
