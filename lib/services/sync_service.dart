@@ -127,10 +127,9 @@ class SyncService {
     _pendingCompletions.add(completion);
     debugPrint('📝 Queued completion: ${completion.habitId} (${completion.done ? "done" : "undone"})');
 
-    // Trigger batch sync if queue is getting large
-    if (_pendingCompletions.length >= 10) {
-      syncCompletions();
-    }
+    // ✅ FIX: Sync immediately instead of waiting for 10 items
+    debugPrint('🚀 Triggering immediate sync...');
+    syncCompletions();
   }
 
   /// Sync pending completions to backend
