@@ -115,69 +115,76 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                 Align(
                   alignment: Alignment.topRight,
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(12),
                     child: IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(LucideIcons.x, color: Colors.white70, size: 24),
+                      icon: const Icon(LucideIcons.x, color: Colors.white70, size: 20),
                       style: IconButton.styleFrom(
                         backgroundColor: Colors.white.withOpacity(0.1),
+                        padding: const EdgeInsets.all(8),
                       ),
                     ),
                   ),
                 ),
 
+                // All content in one Column (no scroll)
                 Expanded(
-                  child: SingleChildScrollView(
+                  child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const SizedBox(height: 20),
+                        // Top section: Icon + Title
+                        Column(
+                          children: [
+                            const SizedBox(height: 8),
+                            _buildHeader(),
+                          ],
+                        ),
 
-                        // Icon + Badge
-                        _buildHeader(),
+                        // Middle section: Features (compact)
+                        Expanded(
+                          child: Center(
+                            child: _buildFeatures(),
+                          ),
+                        ),
 
-                        const SizedBox(height: 40),
-
-                        // Feature cards
-                        _buildFeatures(),
-
-                        const SizedBox(height: 40),
-
-                        // Plan selection
-                        _buildPlanSelector(),
-
-                        const SizedBox(height: 32),
-
-                        // CTA Button
-                        _buildCTAButton(),
-
-                        const SizedBox(height: 16),
-
-                        // Restore purchases
-                        TextButton(
-                          onPressed: _restorePurchases,
-                          child: Text(
-                            'Restore Purchases',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.6),
-                              fontSize: 14,
+                        // Bottom section: Plans + CTA
+                        Column(
+                          children: [
+                            _buildPlanSelector(),
+                            const SizedBox(height: 16),
+                            _buildCTAButton(),
+                            const SizedBox(height: 12),
+                            
+                            // Restore purchases + Terms (compact)
+                            TextButton(
+                              onPressed: _restorePurchases,
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: Text(
+                                'Restore Purchases',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.6),
+                                  fontSize: 13,
+                                ),
+                              ),
                             ),
-                          ),
+                            
+                            Text(
+                              'Auto-renews. Cancel anytime.',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.4),
+                                fontSize: 11,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                          ],
                         ),
-
-                        const SizedBox(height: 8),
-
-                        // Terms
-                        Text(
-                          'Subscription auto-renews. Cancel anytime.',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.4),
-                            fontSize: 12,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-
-                        const SizedBox(height: 40),
                       ],
                     ),
                   ),
@@ -204,25 +211,25 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
   Widget _buildHeader() {
     return Column(
       children: [
-        // Animated crown icon
+        // Animated crown icon (smaller)
         Container(
-          width: 80,
-          height: 80,
+          width: 64,
+          height: 64,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: AppColors.emeraldGradient,
             boxShadow: [
               BoxShadow(
                 color: AppColors.emerald.withOpacity(0.4),
-                blurRadius: 30,
-                spreadRadius: 5,
+                blurRadius: 24,
+                spreadRadius: 4,
               ),
             ],
           ),
           child: const Icon(
             LucideIcons.crown,
             color: Colors.black,
-            size: 40,
+            size: 32,
           ),
         )
             .animate(onPlay: (controller) => controller.repeat(reverse: true))
@@ -232,15 +239,15 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
             .then()
             .scale(duration: 1000.ms, begin: const Offset(1.05, 1.05), end: const Offset(1, 1)),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
 
-        // Title
+        // Title (more compact)
         ShaderMask(
           shaderCallback: (bounds) => AppColors.emeraldGradient.createShader(bounds),
           child: const Text(
-            'Upgrade to AI Companion',
+            'Upgrade to Premium',
             style: TextStyle(
-              fontSize: 32,
+              fontSize: 28,
               fontWeight: FontWeight.w900,
               color: Colors.white,
               letterSpacing: -0.5,
@@ -249,22 +256,22 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
           ),
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
 
         Text(
-          'Unlock ${widget.feature} and all premium features',
+          'Unlock ${widget.feature} and all features',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 14,
             color: Colors.white.withOpacity(0.7),
           ),
           textAlign: TextAlign.center,
         ),
 
-        // Developer badge
+        // Developer badge (compact)
         if (_isDeveloper) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -272,19 +279,19 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                   AppColors.emerald.withOpacity(0.1),
                 ],
               ),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.emerald.withOpacity(0.3)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(LucideIcons.code, color: AppColors.emerald, size: 16),
-                const SizedBox(width: 8),
+                const Icon(LucideIcons.code, color: AppColors.emerald, size: 14),
+                const SizedBox(width: 6),
                 Text(
-                  'Developer - Free AI Access',
+                  'Developer - Free Access',
                   style: TextStyle(
                     color: AppColors.emerald,
-                    fontSize: 14,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -305,32 +312,23 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
       },
       {
         'icon': LucideIcons.zap,
-        'title': 'What-If Simulator',
-        'description': 'Scientific habit plans backed by research',
+        'title': 'What-If Simulator & Habit Plans',
+        'description': 'Scientific plans backed by research',
       },
       {
         'icon': LucideIcons.brain,
-        'title': 'Daily Briefs & Debriefs',
-        'description': 'Personalized coaching every day',
-      },
-      {
-        'icon': LucideIcons.target,
-        'title': 'Smart Nudges',
-        'description': 'Real-time behavioral interventions',
-      },
-      {
-        'icon': LucideIcons.sparkles,
-        'title': 'Priority Support',
-        'description': 'Get help when you need it',
+        'title': 'Daily Coaching & Smart Nudges',
+        'description': 'Personalized briefs, debriefs & interventions',
       },
     ];
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: features.asMap().entries.map((entry) {
         final index = entry.key;
         final feature = entry.value;
         return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.only(bottom: 10),
           child: _buildFeatureCard(
             feature['icon'] as IconData,
             feature['title'] as String,
@@ -346,10 +344,10 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
 
   Widget _buildFeatureCard(IconData icon, String title, String description) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: Colors.white.withOpacity(0.1),
           width: 1,
@@ -358,15 +356,15 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
       child: Row(
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               gradient: AppColors.emeraldGradient.scale(0.3),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: AppColors.emerald, size: 24),
+            child: Icon(icon, color: AppColors.emerald, size: 20),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -375,16 +373,16 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                   title,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   description,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.6),
-                    fontSize: 14,
+                    fontSize: 12,
                   ),
                 ),
               ],
@@ -393,7 +391,7 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
           Icon(
             LucideIcons.check,
             color: AppColors.emerald,
-            size: 20,
+            size: 18,
           ),
         ],
       ),
@@ -407,11 +405,11 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
           'Choose Your Plan',
           style: TextStyle(
             color: Colors.white.withOpacity(0.8),
-            fontSize: 18,
+            fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
@@ -419,17 +417,17 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                 index: 0,
                 title: 'Monthly',
                 price: '\$6.99',
-                period: '/month',
+                period: '/mo',
                 badge: null,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: _buildPlanOption(
                 index: 1,
                 title: 'Annual',
                 price: '\$49.99',
-                period: '/year',
+                period: '/yr',
                 badge: 'Save 40%',
               ),
             ),
@@ -451,7 +449,7 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
     return GestureDetector(
       onTap: () => setState(() => _selectedPlanIndex = index),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           gradient: isSelected
               ? LinearGradient(
@@ -464,7 +462,7 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                 )
               : null,
           color: isSelected ? null : Colors.white.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.emerald : Colors.white.withOpacity(0.1),
             width: isSelected ? 2 : 1,
@@ -480,11 +478,11 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                   title,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -492,7 +490,7 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                       price,
                       style: TextStyle(
                         color: isSelected ? AppColors.emerald : Colors.white,
-                        fontSize: 24,
+                        fontSize: 20,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -500,7 +498,7 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                       period,
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.6),
-                        fontSize: 14,
+                        fontSize: 12,
                       ),
                     ),
                   ],
@@ -509,17 +507,17 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
             ),
             if (badge != null)
               Positioned(
-                top: -8,
-                right: -8,
+                top: -6,
+                right: -6,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                   decoration: BoxDecoration(
                     gradient: AppColors.emeraldGradient,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.emerald.withOpacity(0.4),
-                        blurRadius: 8,
+                        blurRadius: 6,
                         spreadRadius: 1,
                       ),
                     ],
@@ -528,7 +526,7 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                     badge,
                     style: const TextStyle(
                       color: Colors.black,
-                      fontSize: 11,
+                      fontSize: 10,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -547,14 +545,14 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
   Widget _buildCTAButton() {
     return Container(
       width: double.infinity,
-      height: 60,
+      height: 56,
       decoration: BoxDecoration(
         gradient: AppColors.emeraldGradient,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
             color: AppColors.emerald.withOpacity(0.4),
-            blurRadius: 20,
+            blurRadius: 16,
             spreadRadius: 2,
             offset: const Offset(0, 4),
           ),
@@ -564,12 +562,12 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
         color: Colors.transparent,
         child: InkWell(
           onTap: _isLoading ? null : _purchase,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           child: Center(
             child: _isLoading
                 ? const SizedBox(
-                    width: 24,
-                    height: 24,
+                    width: 22,
+                    height: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 3,
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
@@ -578,13 +576,13 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(LucideIcons.sparkles, color: Colors.black, size: 20),
+                      const Icon(LucideIcons.sparkles, color: Colors.black, size: 18),
                       const SizedBox(width: 8),
                       Text(
                         _selectedPlanIndex == 0 ? 'Start 7-Day Free Trial' : 'Subscribe Now',
                         style: const TextStyle(
                           color: Colors.black,
-                          fontSize: 18,
+                          fontSize: 17,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.5,
                         ),
