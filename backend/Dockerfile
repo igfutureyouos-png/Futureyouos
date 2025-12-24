@@ -27,5 +27,5 @@ RUN npm ci --omit=dev --legacy-peer-deps --ignore-scripts
 # Expose port
 EXPOSE 3000
 
-# Start the scheduler worker
-CMD ["node", "dist/worker.js"]
+# Start both the API server and scheduler worker
+CMD npx concurrently --kill-others "node dist/server.js" "node dist/worker.js"
