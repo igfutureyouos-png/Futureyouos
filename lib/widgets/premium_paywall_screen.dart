@@ -5,14 +5,7 @@ import '../design/tokens.dart';
 import '../services/payment_service.dart';
 import '../services/premium_service.dart';
 
-/// 💎 PREMIUM PAYWALL V2 - Conversion Optimized
-/// Based on Calm, Headspace, Duolingo Super best practices
-/// Key changes:
-/// - Clear visual hierarchy (value → social proof → pricing → CTA)
-/// - Horizontal plan selector with decoy effect
-/// - Trust signals and transparency
-/// - Proper spacing that works on all devices
-/// - Subtle animations that don't distract
+/// 💎 PREMIUM PAYWALL - Single Screen, No Scroll, No Fake Data
 class PremiumPaywallScreen extends StatefulWidget {
   final String feature;
 
@@ -27,11 +20,11 @@ class PremiumPaywallScreen extends StatefulWidget {
 
 class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
   // ═══════════════════════════════════════════════════════════════════════════
-  // STATE - KEEP EXACTLY AS IS
+  // STATE - UNTOUCHED
   // ═══════════════════════════════════════════════════════════════════════════
   bool _isLoading = false;
   bool _isDeveloper = false;
-  int _selectedPlanIndex = 1; // Default to annual (better conversion)
+  int _selectedPlanIndex = 1; // Default annual
 
   @override
   void initState() {
@@ -42,88 +35,81 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
   Future<void> _checkDeveloperStatus() async {
     final isDev = await PremiumService.isDeveloper();
     if (mounted) {
-      setState(() {
-        _isDeveloper = isDev;
-      });
+      setState(() => _isDeveloper = isDev);
     }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // BUILD - COMPLETELY REDESIGNED FOR CONVERSION
+  // BUILD - SINGLE SCREEN, NO SCROLL
   // ═══════════════════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final isSmallScreen = screenHeight < 700;
-
     return Scaffold(
       backgroundColor: AppColors.baseDark1,
       body: Stack(
         children: [
-          // ─────────────────────────────────────────────────────────────────────
-          // BACKGROUND - Subtle, not distracting
-          // ─────────────────────────────────────────────────────────────────────
+          // Background
           _buildBackground(),
 
-          // ─────────────────────────────────────────────────────────────────────
-          // MAIN CONTENT - Scrollable for small screens
-          // ─────────────────────────────────────────────────────────────────────
+          // Content - NO SCROLL
           SafeArea(
-            child: Column(
-              children: [
-                // Close button - top right, always visible
-                _buildCloseButton(),
-
-                // Scrollable content
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: isSmallScreen ? 8 : 16,
-                    ),
-                    child: Column(
-                      children: [
-                        // 1. HERO - Crown + Title
-                        _buildHero(isSmallScreen),
-
-                        SizedBox(height: isSmallScreen ? 20 : 32),
-
-                        // 2. SOCIAL PROOF - Trust signals
-                        _buildSocialProof(),
-
-                        SizedBox(height: isSmallScreen ? 20 : 28),
-
-                        // 3. VALUE PROPS - What they get
-                        _buildValueProps(isSmallScreen),
-
-                        SizedBox(height: isSmallScreen ? 24 : 32),
-
-                        // 4. PRICING - Plan selector
-                        _buildPricingSection(),
-
-                        const SizedBox(height: 20),
-
-                        // 5. CTA - Primary action
-                        _buildCTA(),
-
-                        const SizedBox(height: 16),
-
-                        // 6. TRUST FOOTER - Restore + Terms
-                        _buildTrustFooter(),
-
-                        const SizedBox(height: 24),
-                      ],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  // Close button
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(
+                          LucideIcons.x,
+                          color: AppColors.textQuaternary,
+                          size: 22,
+                        ),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white.withOpacity(0.05),
+                          padding: const EdgeInsets.all(10),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ],
+
+                  // Spacer pushes content to center-ish
+                  const Spacer(flex: 2),
+
+                  // Hero - Crown + Title
+                  _buildHero(),
+
+                  const SizedBox(height: 32),
+
+                  // Value props - compact
+                  _buildValueProps(),
+
+                  const Spacer(flex: 3),
+
+                  // Pricing
+                  _buildPricing(),
+
+                  const SizedBox(height: 20),
+
+                  // CTA
+                  _buildCTA(),
+
+                  const SizedBox(height: 16),
+
+                  // Footer
+                  _buildFooter(),
+
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
 
-          // ─────────────────────────────────────────────────────────────────────
-          // LOADING OVERLAY
-          // ─────────────────────────────────────────────────────────────────────
+          // Loading
           if (_isLoading) _buildLoadingOverlay(),
         ],
       ),
@@ -131,27 +117,24 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // BACKGROUND - Clean, premium feel
+  // BACKGROUND
   // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildBackground() {
     return Stack(
       children: [
-        // Base gradient
         Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                Color(0xFF0D1117), // Slightly blue-black
+                Color(0xFF0D1117),
                 AppColors.baseDark1,
-                Color(0xFF0A0F0D), // Hint of emerald in black
+                Color(0xFF0A0F0D),
               ],
             ),
           ),
         ),
-
-        // Top glow - subtle
         Positioned(
           top: -80,
           left: 0,
@@ -173,39 +156,15 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // CLOSE BUTTON - Accessible but not prominent
+  // HERO - Crown + Title
   // ═══════════════════════════════════════════════════════════════════════════
-  Widget _buildCloseButton() {
-    return Align(
-      alignment: Alignment.topRight,
-      child: Padding(
-        padding: const EdgeInsets.only(right: 16, top: 8),
-        child: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: Icon(
-            LucideIcons.x,
-            color: AppColors.textQuaternary,
-            size: 22,
-          ),
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.white.withOpacity(0.05),
-            padding: const EdgeInsets.all(10),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // HERO SECTION - Crown + Title + Feature context
-  // ═══════════════════════════════════════════════════════════════════════════
-  Widget _buildHero(bool isSmallScreen) {
+  Widget _buildHero() {
     return Column(
       children: [
-        // Crown with glow
+        // Crown
         Container(
-          width: isSmallScreen ? 72 : 88,
-          height: isSmallScreen ? 72 : 88,
+          width: 80,
+          height: 80,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: AppColors.emeraldGradient,
@@ -217,30 +176,29 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
               ),
             ],
           ),
-          child: Icon(
+          child: const Icon(
             LucideIcons.crown,
             color: Colors.black,
-            size: isSmallScreen ? 36 : 44,
+            size: 40,
           ),
         )
             .animate()
             .fadeIn(duration: 600.ms)
             .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1)),
 
-        SizedBox(height: isSmallScreen ? 16 : 24),
+        const SizedBox(height: 20),
 
-        // Title with gradient
+        // Title
         ShaderMask(
           shaderCallback: (bounds) =>
               AppColors.emeraldGradient.createShader(bounds),
-          child: Text(
-            'Unlock Your Full Potential',
+          child: const Text(
+            'Unlock Premium',
             style: TextStyle(
-              fontSize: isSmallScreen ? 26 : 32,
+              fontSize: 32,
               fontWeight: FontWeight.w900,
               color: Colors.white,
               letterSpacing: -1,
-              height: 1.1,
             ),
             textAlign: TextAlign.center,
           ),
@@ -248,11 +206,11 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
 
         const SizedBox(height: 8),
 
-        // Subtitle - contextual
+        // Subtitle
         Text(
-          'Get ${widget.feature} and everything else',
+          'Get ${widget.feature} and all features',
           style: TextStyle(
-            fontSize: isSmallScreen ? 15 : 16,
+            fontSize: 16,
             color: AppColors.textSecondary,
             fontWeight: FontWeight.w500,
           ),
@@ -261,31 +219,24 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
 
         // Developer badge
         if (_isDeveloper) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.emerald.withOpacity(0.15),
-                  AppColors.emerald.withOpacity(0.05),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: AppColors.emerald.withOpacity(0.3),
-              ),
+              color: AppColors.emerald.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.emerald.withOpacity(0.3)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(LucideIcons.code2, color: AppColors.emerald, size: 16),
-                const SizedBox(width: 8),
+                Icon(LucideIcons.code2, color: AppColors.emerald, size: 14),
+                const SizedBox(width: 6),
                 Text(
-                  'Developer Access Enabled',
+                  'Developer Access',
                   style: TextStyle(
                     color: AppColors.emerald,
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -298,263 +249,77 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // SOCIAL PROOF - Trust signals that convert
+  // VALUE PROPS - Compact, no fake data
   // ═══════════════════════════════════════════════════════════════════════════
-  Widget _buildSocialProof() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.06),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildProofItem('4.9', '★', 'App Store'),
-          _buildProofDivider(),
-          _buildProofItem('50K+', '', 'Active Users'),
-          _buildProofDivider(),
-          _buildProofItem('92%', '', 'Success Rate'),
-        ],
-      ),
+  Widget _buildValueProps() {
+    return Column(
+      children: [
+        _buildFeatureRow(LucideIcons.messageCircle, 'Unlimited AI conversations'),
+        const SizedBox(height: 12),
+        _buildFeatureRow(LucideIcons.target, 'Smart briefs, nudges & coaching'),
+        const SizedBox(height: 12),
+        _buildFeatureRow(LucideIcons.sparkles, 'What-If life simulator'),
+      ],
     ).animate().fadeIn(delay: 400.ms, duration: 500.ms);
   }
 
-  Widget _buildProofItem(String value, String suffix, String label) {
-    return Column(
+  Widget _buildFeatureRow(IconData icon, String text) {
+    return Row(
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                height: 1,
-              ),
-            ),
-            if (suffix.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 1),
-                child: Text(
-                  suffix,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.amber,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-          ],
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppColors.emerald.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: AppColors.emerald, size: 18),
         ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: AppColors.textQuaternary,
-            fontWeight: FontWeight.w500,
+        const SizedBox(width: 14),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
+        Icon(LucideIcons.check, color: AppColors.emerald, size: 18),
       ],
     );
   }
 
-  Widget _buildProofDivider() {
-    return Container(
-      width: 1,
-      height: 32,
-      color: Colors.white.withOpacity(0.08),
-    );
-  }
-
   // ═══════════════════════════════════════════════════════════════════════════
-  // VALUE PROPS - What they actually get
+  // PRICING - Horizontal cards
   // ═══════════════════════════════════════════════════════════════════════════
-  Widget _buildValueProps(bool isSmallScreen) {
-    final features = [
-      (
-        icon: LucideIcons.messageCircle,
-        title: 'Unlimited AI Conversations',
-        subtitle: 'Chat with Future-You anytime, no limits',
-      ),
-      (
-        icon: LucideIcons.target,
-        title: 'Smart Habit Intelligence',
-        subtitle: 'Personalized briefs, nudges & coaching',
-      ),
-      (
-        icon: LucideIcons.sparkles,
-        title: 'What-If Simulator',
-        subtitle: 'See your future before you live it',
-      ),
-    ];
-
-    return Column(
-      children: features.asMap().entries.map((entry) {
-        final index = entry.key;
-        final feature = entry.value;
-
-        return Padding(
-          padding: EdgeInsets.only(bottom: index < features.length - 1 ? 12 : 0),
-          child: _buildFeatureRow(
-            feature.icon,
-            feature.title,
-            feature.subtitle,
-            isSmallScreen,
-          ),
-        )
-            .animate()
-            .fadeIn(delay: (500 + index * 100).ms, duration: 400.ms)
-            .slideX(begin: -0.1, end: 0);
-      }).toList(),
-    );
-  }
-
-  Widget _buildFeatureRow(
-    IconData icon,
-    String title,
-    String subtitle,
-    bool isSmallScreen,
-  ) {
-    return Container(
-      padding: EdgeInsets.all(isSmallScreen ? 14 : 16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.06),
-        ),
-      ),
-      child: Row(
-        children: [
-          // Icon container
-          Container(
-            width: isSmallScreen ? 44 : 48,
-            height: isSmallScreen ? 44 : 48,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.emerald.withOpacity(0.2),
-                  AppColors.emerald.withOpacity(0.05),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              color: AppColors.emerald,
-              size: isSmallScreen ? 22 : 24,
-            ),
-          ),
-
-          const SizedBox(width: 14),
-
-          // Text content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: isSmallScreen ? 15 : 16,
-                    fontWeight: FontWeight.w700,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: AppColors.textTertiary,
-                    fontSize: isSmallScreen ? 13 : 14,
-                    height: 1.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Checkmark
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: AppColors.emerald.withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              LucideIcons.check,
-              color: AppColors.emerald,
-              size: 14,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // PRICING SECTION - Horizontal cards with decoy effect
-  // ═══════════════════════════════════════════════════════════════════════════
-  Widget _buildPricingSection() {
-    return Column(
+  Widget _buildPricing() {
+    return Row(
       children: [
-        // Section header
-        Text(
-          'Choose Your Plan',
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
+        // Monthly
+        Expanded(
+          child: _buildPlanCard(
+            index: 0,
+            title: 'Monthly',
+            price: '\$6.99',
+            period: '/mo',
+            badge: null,
           ),
         ),
-
-        const SizedBox(height: 14),
-
-        // Plan cards - horizontal
-        Row(
-          children: [
-            // Monthly plan
-            Expanded(
-              child: _buildPlanCard(
-                index: 0,
-                title: 'Monthly',
-                price: '\$6.99',
-                period: '/month',
-                subtitle: 'Flexible billing',
-                badge: null,
-              ),
-            ),
-
-            const SizedBox(width: 12),
-
-            // Annual plan - RECOMMENDED (decoy effect)
-            Expanded(
-              child: _buildPlanCard(
-                index: 1,
-                title: 'Annual',
-                price: '\$49.99',
-                period: '/year',
-                subtitle: '\$4.17/month',
-                badge: 'SAVE 40%',
-              ),
-            ),
-          ],
+        const SizedBox(width: 12),
+        // Annual
+        Expanded(
+          child: _buildPlanCard(
+            index: 1,
+            title: 'Annual',
+            price: '\$49.99',
+            period: '/yr',
+            badge: 'SAVE 40%',
+          ),
         ),
       ],
-    ).animate().fadeIn(delay: 800.ms, duration: 400.ms);
+    ).animate().fadeIn(delay: 500.ms, duration: 400.ms);
   }
 
   Widget _buildPlanCard({
@@ -562,11 +327,9 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
     required String title,
     required String price,
     required String period,
-    required String subtitle,
     String? badge,
   }) {
     final isSelected = _selectedPlanIndex == index;
-    final isRecommended = badge != null;
 
     return GestureDetector(
       onTap: () => setState(() => _selectedPlanIndex = index),
@@ -587,20 +350,9 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
           color: isSelected ? null : Colors.white.withOpacity(0.03),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected
-                ? AppColors.emerald
-                : Colors.white.withOpacity(0.08),
+            color: isSelected ? AppColors.emerald : Colors.white.withOpacity(0.08),
             width: isSelected ? 2 : 1,
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.emerald.withOpacity(0.15),
-                    blurRadius: 20,
-                    spreadRadius: -5,
-                  ),
-                ]
-              : null,
         ),
         child: Stack(
           clipBehavior: Clip.none,
@@ -608,7 +360,6 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Plan name
                 Text(
                   title,
                   style: TextStyle(
@@ -617,10 +368,7 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-
-                const SizedBox(height: 8),
-
-                // Price
+                const SizedBox(height: 6),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -628,7 +376,7 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                       price,
                       style: TextStyle(
                         color: isSelected ? AppColors.emerald : Colors.white,
-                        fontSize: 24,
+                        fontSize: 22,
                         fontWeight: FontWeight.w900,
                         height: 1,
                       ),
@@ -640,69 +388,29 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                         style: TextStyle(
                           color: AppColors.textQuaternary,
                           fontSize: 12,
-                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 6),
-
-                // Subtitle
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: isRecommended && isSelected
-                        ? AppColors.emerald.withOpacity(0.8)
-                        : AppColors.textQuaternary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // Selection indicator
-                Container(
-                  width: double.infinity,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.emerald
-                        : Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
               ],
             ),
-
-            // Badge
             if (badge != null)
               Positioned(
                 top: -10,
                 right: -8,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     gradient: AppColors.emeraldGradient,
                     borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.emerald.withOpacity(0.4),
-                        blurRadius: 8,
-                        spreadRadius: -2,
-                      ),
-                    ],
                   ),
                   child: Text(
                     badge,
                     style: const TextStyle(
                       color: Colors.black,
-                      fontSize: 10,
+                      fontSize: 9,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
                     ),
                   ),
                 ),
@@ -714,20 +422,19 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // CTA BUTTON - Primary conversion action
+  // CTA
   // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildCTA() {
     return Container(
       width: double.infinity,
-      height: 58,
+      height: 56,
       decoration: BoxDecoration(
         gradient: AppColors.emeraldGradient,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: AppColors.emerald.withOpacity(0.4),
-            blurRadius: 24,
-            spreadRadius: -4,
+            blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
@@ -747,22 +454,17 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
                     ),
                   )
-                : Row(
+                : const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
-                        LucideIcons.crown,
-                        color: Colors.black,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 10),
-                      const Text(
+                      Icon(LucideIcons.crown, color: Colors.black, size: 20),
+                      SizedBox(width: 10),
+                      Text(
                         'Unlock Premium Now',
                         style: TextStyle(
                           color: Colors.black,
                           fontSize: 17,
                           fontWeight: FontWeight.w800,
-                          letterSpacing: 0.3,
                         ),
                       ),
                     ],
@@ -770,91 +472,34 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
           ),
         ),
       ),
-    )
-        .animate()
-        .fadeIn(delay: 900.ms, duration: 400.ms)
-        .then()
-        .animate(onPlay: (c) => c.repeat(reverse: true))
-        .scale(
-          duration: 2000.ms,
-          begin: const Offset(1, 1),
-          end: const Offset(1.015, 1.015),
-        );
+    ).animate().fadeIn(delay: 600.ms, duration: 400.ms);
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // TRUST FOOTER - Restore purchases + Terms
+  // FOOTER
   // ═══════════════════════════════════════════════════════════════════════════
-  Widget _buildTrustFooter() {
+  Widget _buildFooter() {
     return Column(
       children: [
-        // Restore purchases
         TextButton(
           onPressed: _restorePurchases,
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
           child: Text(
             'Restore Purchases',
             style: TextStyle(
               color: AppColors.textTertiary,
               fontSize: 14,
-              fontWeight: FontWeight.w500,
             ),
           ),
         ),
-
-        const SizedBox(height: 8),
-
-        // Terms and transparency
         Text(
-          'Cancel anytime in Settings • Secure payment',
+          'Cancel anytime • Secure payment',
           style: TextStyle(
             color: AppColors.textQuaternary,
             fontSize: 11,
-            height: 1.4,
           ),
-          textAlign: TextAlign.center,
-        ),
-
-        const SizedBox(height: 4),
-
-        // Privacy & Terms links
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildFooterLink('Privacy'),
-            Text(
-              ' • ',
-              style: TextStyle(
-                color: AppColors.textQuaternary,
-                fontSize: 11,
-              ),
-            ),
-            _buildFooterLink('Terms'),
-          ],
         ),
       ],
-    ).animate().fadeIn(delay: 1000.ms, duration: 400.ms);
-  }
-
-  Widget _buildFooterLink(String text) {
-    return GestureDetector(
-      onTap: () {
-        // TODO: Navigate to privacy/terms
-      },
-      child: Text(
-        text,
-        style: TextStyle(
-          color: AppColors.textTertiary,
-          fontSize: 11,
-          decoration: TextDecoration.underline,
-          decorationColor: AppColors.textQuaternary,
-        ),
-      ),
-    );
+    ).animate().fadeIn(delay: 700.ms, duration: 400.ms);
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -863,29 +508,16 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
   Widget _buildLoadingOverlay() {
     return Container(
       color: Colors.black.withOpacity(0.8),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.emerald),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Processing...',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-              ),
-            ),
-          ],
+      child: const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(AppColors.emerald),
         ),
       ),
     );
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // PURCHASE LOGIC - KEEP EXACTLY AS IS
+  // PURCHASE LOGIC - UNTOUCHED
   // ═══════════════════════════════════════════════════════════════════════════
   Future<void> _purchase() async {
     setState(() => _isLoading = true);
@@ -913,8 +545,7 @@ class _PremiumPaywallScreenState extends State<PremiumPaywallScreen> {
             ),
             backgroundColor: AppColors.emerald,
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             padding: const EdgeInsets.all(16),
           ),
         );
