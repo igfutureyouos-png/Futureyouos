@@ -41,6 +41,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   bool _hasShownWelcomeDay = false;
   int _unreadCount = 0;
   bool _isInitialized = false;
+  bool _isFirstLoad = true; // ✅ FIX: Track first load to prevent setState during sync
   
   @override
   void initState() {
@@ -67,6 +68,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       // NOW do background sync WITHOUT blocking UI
       await _performBackgroundSyncSilently();
       
+      // ✅ FIX: Mark first load complete AFTER background sync finishes
+      _isFirstLoad = false;
+      
     } catch (e, stackTrace) {
       debugPrint('❌ Error initializing home screen: $e');
       debugPrint('Stack trace: $stackTrace');
@@ -76,6 +80,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
           _isInitialized = true;
         });
       }
+      _isFirstLoad = false; // ✅ Mark complete even on error
     }
   }
   
@@ -109,7 +114,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     _loadUnreadCount();
   }
 
-  // NEW: Silent refresh that doesn't trigger setState on first load
+  // ✅ FIX: Silent refresh that NEVER triggers setState on first load
   Future<void> _refreshMessagesSilently() async {
     try {
       debugPrint('🔄 Refreshing messages...');
@@ -128,11 +133,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
         },
       );
       
-      // Only setState if we got new data AND UI is already showing
-      if (mounted && _isInitialized) {
+      // ✅ CRITICAL FIX: Only setState if NOT first load
+      // This prevents gray screen during initial load when messages appear
+      if (mounted && _isInitialized && !_isFirstLoad) {
         setState(() {
           debugPrint('✅ Messages refreshed, updating UI');
         });
+      } else {
+        debugPrint('✅ Messages synced silently (first load - no setState)');
       }
     } catch (e, stackTrace) {
       debugPrint('❌ Error refreshing messages: $e');
@@ -974,5 +982,3 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     );
   }
 }
-
-
